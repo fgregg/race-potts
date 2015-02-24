@@ -9,8 +9,10 @@ la_fips = 16000US0644000
 NUMBERS := $(shell seq -w 2 78)
 BLOCKGROUP_SHAPES := $(addsuffix .shapes,$(addprefix bg_,${NUMBERS}))
 
-.INTERMEDIATE : shapes bg_01.shapes block_group.table
+.INTERMEDIATE : shapes bg_01.shapes block_group.table \
+	race.table la_race.csv
 
+.PHONY : all
 all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp
 
 %_race.shp : %_race.table shapes
@@ -53,7 +55,6 @@ bg_%.zip :
 		"COPY $(basename $(word 2,$^)) FROM STDIN WITH CSV HEADER DELIMITER AS ','"
 	touch $@
 
-.INTERMEDIATE : race.table la_race.csv
 race.table : la_race.csv 
 	csvsql --db "postgresql://$(PG_USER)@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
 		--tables $(basename $@) $<

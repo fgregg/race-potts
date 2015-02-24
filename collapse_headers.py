@@ -13,7 +13,7 @@ def collapse_header(header) :
 
     collapsed_f = cStringIO.StringIO()
     csv.writer(collapsed_f).writerow(collapsed_header)
-    print collapsed_f.getvalue(),
+    print collapsed_f.getvalue().strip()
 
 
 if __name__ == '__main__' :

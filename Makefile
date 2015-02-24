@@ -28,6 +28,7 @@ bg_%.shapes : tl_2014_%_bg.* block_group.table
 	- shp2pgsql -s 4326 -a $(basename $<).shp blockgroups | psql -d $(PG_DB)
 	- touch $@
 
+.INTERMEDIATE : bg_01.shapes
 block_group.table bg_01.shapes : tl_2014_01_bg.*
 	shp2pgsql -I -s 4326 -d $(basename $<).shp blockgroups | psql -d $(PG_DB)
 	touch block_group.table
@@ -43,18 +44,20 @@ blocks.table : tl_2014_us_tbg.shp make_db
 	touch blocks.table
 
 %_race.zip : 
-	wget -O $@ "http://api.censusreporter.org/1.0/data/download/latest?table_ids=B02001&geo_ids=$($*_fips),150|$($*_fips)&format=csv"
+	wget -O $@ "http://api.censusreporter.org/1.0/data/download/latest?table_ids=B03002&geo_ids=$($*_fips),150|$($*_fips)&format=csv"
 
 
 %_race.csv : %_race.zip
 	unzip -c $< | sed -n '/geoid/,$$p' | sed -n '/inflating/q;p' > temp_$@
-	(grep 'geoid' temp_$@ | python collapse_headers.py; \
-	 tail -n +2 temp_$@) | grep -v ^$$ > $@
+	(grep 'geoid' temp_$@ | python collapse_headers.py | \
+	 sed 's/$$/,placefips/'; \
+	 tail -n +2 temp_$@ ) | grep -v ^$$ | \
+	 sed '2,$$s/$$/,$($*_fips)/' > $@
 	rm temp_$@
 
-race.table : 
+race.table : la_race.csv 
 	csvsql --db "postgresql://$(PG_USER)@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
-		--tables $(basename $@) typical_race.csv
+		--tables $(basename $@) $<
 	touch $@
 
 %_race.table : %_race.csv race.table
@@ -62,9 +65,17 @@ race.table :
 		"COPY $(basename $(word 2,$^)) FROM STDIN WITH CSV HEADER DELIMITER AS ','"
 	touch $@
 
-all : chicago_race.table nyc_race.table atlanta_race.table \
-	la_race.table
+%_race.shp : %_race.table 
+	pgsql2shp -f $@ -h $(PG_HOST) -u $(PG_USER) -p $(PG_PORT) $(PG_DB) \
+	"SELECT geoid, geom, \
+	 \"B03002001\" as total, \"B03002003\" as non_hisp_white, \
+	 \"B03002004\" as non_hisp_black, \"B03002012\" as hispanic \
+	 FROM race INNER JOIN blockgroups USING (geoid) \
+	 WHERE placefips = '$($*_fips)'"	
 
-clean : 
-	rm tl_2014_us_tbg.*
+all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp
 
+drop_race :
+	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS race"
+	rm *_race.table
+	rm race.table

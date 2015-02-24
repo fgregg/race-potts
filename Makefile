@@ -10,7 +10,7 @@ NUMBERS := $(shell seq -w 2 78)
 BLOCKGROUP_SHAPES := $(addsuffix .shapes,$(addprefix bg_,${NUMBERS}))
 
 .INTERMEDIATE : shapes bg_01.shapes block_group.table \
-	race.table la_race.csv shapes
+	race.table la_race.csv shapes make_db
 
 .PHONY : all drop_race
 

@@ -12,7 +12,7 @@ BLOCKGROUP_SHAPES := $(addsuffix .shapes,$(addprefix bg_,${NUMBERS}))
 .INTERMEDIATE : shapes bg_01.shapes block_group.table \
 	race.table la_race.csv shapes
 
-.PHONY : all drop_race make_db
+.PHONY : all drop_race
 
 all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp
 
@@ -37,7 +37,7 @@ bg_%.shapes : tl_2014_%_bg.* block_group.table
 	- shp2pgsql -s 4326 -a $(basename $<).shp blockgroups | psql -d $(PG_DB)
 	- touch $@
 
-block_group.table bg_01.shapes : tl_2014_01_bg.*
+block_group.table bg_01.shapes : tl_2014_01_bg.* make_db
 	shp2pgsql -I -s 4326 -d $(basename $<).shp blockgroups | psql -d $(PG_DB)
 	touch block_group.table
 	touch bg_01.shapes
@@ -56,7 +56,7 @@ bg_%.zip :
 		"COPY $(basename $(word 2,$^)) FROM STDIN WITH CSV HEADER DELIMITER AS ','"
 	touch $@
 
-race.table : la_race.csv 
+race.table : la_race.csv make_db
 	csvsql --db "postgresql://$(PG_USER)@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
 		--tables $(basename $@) $<
 	touch $@
@@ -76,9 +76,7 @@ race.table : la_race.csv
 make_db :
 	createdb $(PG_DB)
 	psql -d $(PG_DB) -c "CREATE EXTENSION postgis"
-	touch make_db
+	touch $@
 
 drop_race :
 	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS race"
-	rm *_race.table
-	rm race.table

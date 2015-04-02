@@ -44,7 +44,7 @@ crf = GraphCRF(n_states=3, n_features=1)
 clf = ssvm.OneSlackSSVM(model=crf, C=100, inference_cache=100,
                         tol=.1)
 
-base_names = ('la_race', 'chicago_race')
+base_names = ('la_race', 'chicago_race', 'atlanta_race', 'nyc_race')
 
 X = []
 Y=  []
@@ -60,7 +60,6 @@ unary_weights = crf.n_states * crf.n_features
 unary = weights[:unary_weights]
 
 edges = numpy.zeros((crf.n_states, crf.n_states))
-edges[numpy.triu_indices(crf.n_states)] = weights[unary_weights:]
 edges[numpy.tril_indices(crf.n_states)] = weights[unary_weights:]
 
 print 'unary'

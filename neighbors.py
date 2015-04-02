@@ -10,9 +10,9 @@ def example(base_name) :
 
     # no features
     labels = numpy.fromiter(raceLabelGen(dbf), 
-                            dtype='int32').reshape((-1, 1))
+                            dtype='int32')
     
-    features = numpy.ones((labels.shape[0], 1), dtype='float')
+    features = numpy.ones((len(labels), 1), dtype='float')
     edgelist = edgeList(shapes)
 
 
@@ -50,10 +50,20 @@ X = []
 Y=  []
 for name in base_names :
     x, y = example(name)
-    print x, y
     X.append(x)
     Y.append(y)
 
 print "estimating"
 clf.fit(X, Y)
-print clf.w
+weights = clf.w
+unary_weights = crf.n_states * crf.n_features
+unary = weights[:unary_weights]
+
+edges = numpy.zeros((crf.n_states, crf.n_states))
+edges[numpy.triu_indices(crf.n_states)] = weights[unary_weights:]
+edges[numpy.tril_indices(crf.n_states)] = weights[unary_weights:]
+
+print 'unary'
+print unary
+print 'edges'
+print edges

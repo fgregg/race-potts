@@ -75,8 +75,6 @@ race.table : la_race.csv make_db
 %_race.zip : 
 	wget -O $@ "http://api.censusreporter.org/1.0/data/download/latest?table_ids=B03002&geo_ids=$($*_fips),150|$($*_fips)&format=csv"
 
-latest?table_ids=B03002&geo_ids=16000US0644000,150|16000US0644000&format=csv
-
 make_db :
 	createdb $(PG_DB)
 	psql -d $(PG_DB) -c "CREATE EXTENSION postgis"

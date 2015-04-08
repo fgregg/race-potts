@@ -5,16 +5,19 @@ nyc_fips = 16000US3651000
 atlanta_fips = 16000US1304000
 houston_fips = 16000US4835000
 la_fips = 16000US0644000
+dc_fips = 16000US1150000
+minneapolis_fips = 16000US2743000
 
 NUMBERS := $(shell seq -w 2 78)
 BLOCKGROUP_SHAPES := $(addsuffix .shapes,$(addprefix bg_,${NUMBERS}))
 
-.INTERMEDIATE : shapes bg_01.shapes block_group.table \
-	race.table la_race.csv shapes make_db
+#.INTERMEDIATE : shapes bg_01.shapes block_group.table \
+#	race.table la_race.csv shapes make_db
 
 .PHONY : all drop_race
 
-all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp
+all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp \
+	houston_race.shp dc_race.shp minneapolis_race.shp
 
 %_race.shp : %_race.table shapes
 	pgsql2shp -f $@ -h $(PG_HOST) -u $(PG_USER) -p $(PG_PORT) $(PG_DB) \
@@ -72,6 +75,7 @@ race.table : la_race.csv make_db
 %_race.zip : 
 	wget -O $@ "http://api.censusreporter.org/1.0/data/download/latest?table_ids=B03002&geo_ids=$($*_fips),150|$($*_fips)&format=csv"
 
+latest?table_ids=B03002&geo_ids=16000US0644000,150|16000US0644000&format=csv
 
 make_db :
 	createdb $(PG_DB)
@@ -80,3 +84,6 @@ make_db :
 
 drop_race :
 	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS race"
+	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS blockgroups"
+	- rm shapes
+	- rm race.table

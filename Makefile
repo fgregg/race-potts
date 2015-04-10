@@ -8,25 +8,18 @@ la_fips = 16000US0644000
 dc_fips = 16000US1150000
 minneapolis_fips = 16000US2743000
 
+NUMBERS := $(shell seq -w 2 78)
+BLOCKGROUP_SHAPES := $(addsuffix .shapes,$(addprefix bg_,${NUMBERS}))
 
+#.INTERMEDIATE : shapes bg_01.shapes block_group.table \
+#	race.table la_race.csv shapes make_db
 
-make_db :
-	createdb $(PG_DB)
-	psql -d $(PG_DB) -c "CREATE EXTENSION postgis"
-	psql -d $(PG_DB) -c "CREATE ROLE census"
+.PHONY : all drop_race
 
-%_backup.sql.gz : 
-	wget "https://s3.amazonaws.com/census-backup/acs/2013/$*/$*_backup.sql.gz"
-	touch $@
+all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp \
+	houston_race.shp dc_race.shp minneapolis_race.shp
 
-%.table : %_backup.sql.gz
-	pv $< | gunzip |  sed 's/^\(.*COMMENT .*\)/-- \1/g' | psql -q 	-d $(PG_DB)
-	touch $@
-
-all.tables : acs2013_5yr.table tiger2012.table
-	touch $@
-
-%_race.shp : all.tables
+%_race.shp : %_race.table shapes
 	pgsql2shp -f $@ -h $(PG_HOST) -u $(PG_USER) -p $(PG_PORT) $(PG_DB) \
 	"SELECT geoid, geom, \
 	 \"B03002001\" as total, \"B03002003\" as non_hisp_white, \
@@ -34,8 +27,61 @@ all.tables : acs2013_5yr.table tiger2012.table
 	 FROM race INNER JOIN blockgroups USING (geoid) \
 	 WHERE placefips = '$($*_fips)'"	
 
-all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp \
-	houston_race.shp dc_race.shp minneapolis_race.shp
- 
+## Tiger Shape Files
 
+shapes : ${BLOCKGROUP_SHAPES}
+	psql -d $(PG_DB) -c "ALTER TABLE blockgroups \
+                             ALTER COLUMN geoid TYPE VARCHAR(19)"
+	psql -d $(PG_DB) -c "UPDATE blockgroups SET geoid = '15000US' || geoid"
+	rm *.shapes
+	touch shapes
 
+bg_%.shapes : tl_2014_%_bg.* block_group.table
+	- shp2pgsql -s 4326 -a $(basename $<).shp blockgroups | psql -d $(PG_DB)
+	- touch $@
+
+block_group.table bg_01.shapes : tl_2014_01_bg.* make_db
+	shp2pgsql -I -s 4326 -d $(basename $<).shp blockgroups | psql -d $(PG_DB)
+	touch block_group.table
+	touch bg_01.shapes
+
+tl_2014_%_bg.* : bg_%.zip
+	- unzip $<
+	- touch $@
+
+bg_%.zip : 
+	- wget -O $@ ftp://ftp2.census.gov/geo/tiger/TIGER2014/BG/tl_2014_$*_bg.zip
+
+## Census Data
+
+%_race.table : %_race.csv race.table
+	cat $< | psql -U $(PG_USER) -h $(PG_HOST) -p $(PG_PORT) -d $(PG_DB) -c \
+		"COPY $(basename $(word 2,$^)) FROM STDIN WITH CSV HEADER DELIMITER AS ','"
+	touch $@
+
+race.table : la_race.csv make_db
+	csvsql --db "postgresql://$(PG_USER)@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
+		--tables $(basename $@) $<
+	touch $@
+
+%_race.csv : %_race.zip
+	unzip -c $< | sed -n '/geoid/,$$p' | sed -n '/inflating/q;p' > temp_$@
+	(grep 'geoid' temp_$@ | python collapse_headers.py | \
+	 sed 's/$$/,placefips/'; \
+	 tail -n +2 temp_$@ ) | grep -v ^$$ | \
+	 sed '2,$$s/$$/,$($*_fips)/' > $@
+	rm temp_$@
+
+%_race.zip : 
+	wget -O $@ "http://api.censusreporter.org/1.0/data/download/latest?table_ids=B03002&geo_ids=$($*_fips),150|$($*_fips)&format=csv"
+
+make_db :
+	createdb $(PG_DB)
+	psql -d $(PG_DB) -c "CREATE EXTENSION postgis"
+	touch $@
+
+drop_race :
+	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS race"
+	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS blockgroups"
+	- rm shapes
+	- rm race.table

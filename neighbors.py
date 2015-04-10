@@ -5,7 +5,7 @@ import pystruct.learners as ssvm
 import numpy
 
 def example(base_name) :
-    shapes = pysal.open(base_name + '.shp','r')
+    shapes = pysal.open(base_name + '_race.shp','r')
     dbf = pysal.open(base_name + '.dbf', 'r')
 
     # no features
@@ -44,7 +44,8 @@ crf = GraphCRF(n_states=3, n_features=1)
 clf = ssvm.OneSlackSSVM(model=crf, C=100, inference_cache=100,
                         tol=.1)
 
-base_names = ('la_race', 'chicago_race', 'atlanta_race', 'nyc_race')
+base_names = ('cook_county', 'la_county', 'hennepin', 
+              'harris', 'new_york', 'fulton', 'maricopa')
 
 X = []
 Y=  []

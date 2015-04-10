@@ -1,12 +1,12 @@
 include config.mk
 
-chicago_fips = 16000US1714000
-nyc_fips = 16000US3651000
-atlanta_fips = 16000US1304000
-houston_fips = 16000US4835000
-la_fips = 16000US0644000
-dc_fips = 16000US1150000
-minneapolis_fips = 16000US2743000
+cook_county_state_county = 17 031
+la_county_state_county = 06 037
+hennepin_county_state_county = 27 053 # minneapolis
+harris_county_state_county = 48 201 # houston
+new_york_county_state_county = 36 061
+fulton_county_state_county = 13 121 # atlanta
+maricopa_county_state_county = 04 013
 
 NUMBERS := $(shell seq -w 2 78)
 BLOCKGROUP_SHAPES := $(addsuffix .shapes,$(addprefix bg_,${NUMBERS}))
@@ -16,16 +16,23 @@ BLOCKGROUP_SHAPES := $(addsuffix .shapes,$(addprefix bg_,${NUMBERS}))
 
 .PHONY : all drop_race
 
-all : chicago_race.shp nyc_race.shp atlanta_race.shp la_race.shp \
-	houston_race.shp dc_race.shp minneapolis_race.shp
+all : cook_county_race.shp la_county_race.shp hennepin_county_race.shp \
+	harris_county_race.shp new_york_county_race.shp fulton_county_race.shp \
+	maricopa_county_race.shp
 
 %_race.shp : %_race.table shapes
-	pgsql2shp -f $@ -h $(PG_HOST) -u $(PG_USER) -p $(PG_PORT) $(PG_DB) \
+	pgsql2shp -f $@ $(PG_DB) \
 	"SELECT geoid, geom, \
-	 \"B03002001\" as total, \"B03002003\" as non_hisp_white, \
-	 \"B03002004\" as non_hisp_black, \"B03002012\" as hispanic \
-	 FROM race INNER JOIN blockgroups USING (geoid) \
-	 WHERE placefips = '$($*_fips)'"	
+	 \"B03002_001E\" as total, \"B03002_003E\" as non_hisp_white, \
+	 \"B03002_004E\" as non_hisp_black, \"B03002_012E\" as hispanic \
+	 FROM race, blockgroups \
+	 WHERE statefp = state \
+         AND countyfp = county \
+         AND tractce::INT = tract \
+         AND blkgrpce::INT = \"block group\" \
+	 AND statefp = '$(word 1,$($*_state_county))' \
+	 AND countyfp = '$(word 2,$($*_state_county))' \
+	 AND \"B03002_001E\" > 0"	
 
 ## Tiger Shape Files
 
@@ -33,7 +40,6 @@ shapes : ${BLOCKGROUP_SHAPES}
 	psql -d $(PG_DB) -c "ALTER TABLE blockgroups \
                              ALTER COLUMN geoid TYPE VARCHAR(19)"
 	psql -d $(PG_DB) -c "UPDATE blockgroups SET geoid = '15000US' || geoid"
-	rm *.shapes
 	touch shapes
 
 bg_%.shapes : tl_2014_%_bg.* block_group.table
@@ -55,25 +61,17 @@ bg_%.zip :
 ## Census Data
 
 %_race.table : %_race.csv race.table
-	cat $< | psql -U $(PG_USER) -h $(PG_HOST) -p $(PG_PORT) -d $(PG_DB) -c \
+	cat $< | psql -d $(PG_DB) -c \
 		"COPY $(basename $(word 2,$^)) FROM STDIN WITH CSV HEADER DELIMITER AS ','"
 	touch $@
 
-race.table : la_race.csv make_db
-	csvsql --db "postgresql://$(PG_USER)@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
+race.table : la_county_race.csv make_db
+	csvsql --db "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
 		--tables $(basename $@) $<
 	touch $@
 
-%_race.csv : %_race.zip
-	unzip -c $< | sed -n '/geoid/,$$p' | sed -n '/inflating/q;p' > temp_$@
-	(grep 'geoid' temp_$@ | python collapse_headers.py | \
-	 sed 's/$$/,placefips/'; \
-	 tail -n +2 temp_$@ ) | grep -v ^$$ | \
-	 sed '2,$$s/$$/,$($*_fips)/' > $@
-	rm temp_$@
-
-%_race.zip : 
-	wget -O $@ "http://api.censusreporter.org/1.0/data/download/latest?table_ids=B03002&geo_ids=$($*_fips),150|$($*_fips)&format=csv"
+%_race.csv : 
+	python census_api.py $($*_state_county) B03002_001E,B03002_003E,B03002_004E,B03002_012E > $@
 
 make_db :
 	createdb $(PG_DB)
@@ -84,4 +82,5 @@ drop_race :
 	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS race"
 	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS blockgroups"
 	- rm shapes
+	- rm block_group.table
 	- rm race.table

@@ -7,6 +7,6 @@ SHELL := bash
 
 PG_HOST="localhost"
 PG_USER="fgregg"
-PG_DB="race-potts"
+PG_DB="census"
 PG_PORT="5432"
 PG_PASS="buddah"

@@ -3,10 +3,11 @@ from pysal.weights.Contiguity import buildContiguity
 from pystruct.models import GraphCRF
 import pystruct.learners as ssvm
 import numpy
+import datetime
 
 def example(base_name) :
-    shapes = pysal.open(base_name + '_race.shp','r')
-    dbf = pysal.open(base_name + '.dbf', 'r')
+    shapes = pysal.open(base_name + '_county_race.shp','r')
+    dbf = pysal.open(base_name + '_county_race.dbf', 'r')
 
     # no features
     labels = numpy.fromiter(raceLabelGen(dbf), 
@@ -40,19 +41,28 @@ def edgeList(shapes) :
     return numpy.array(sorted(edgelist))
 
 
-crf = GraphCRF(n_states=3, n_features=1)
-clf = ssvm.OneSlackSSVM(model=crf, C=100, inference_cache=100,
-                        tol=.1)
-
-base_names = ('cook_county', 'la_county', 'hennepin', 
+base_names = ('cook', 'la', 'hennepin', 
               'harris', 'new_york', 'fulton', 'maricopa')
 
 X = []
 Y=  []
-for name in base_names :
+
+city_indicator = numpy.zeros(len(base_names))
+
+for i, name in enumerate(base_names) :
     x, y = example(name)
-    X.append(x)
+    features, edgelist = x
+    n_nodes = features.shape[0]
+    features = city_indicator.copy()
+    features[i] = 1
+    features = numpy.tile(features, (n_nodes, 1))
+    X.append((features, edgelist))
     Y.append(y)
+
+crf = GraphCRF(n_states=3, n_features=len(city_indicator))
+clf = ssvm.OneSlackSSVM(model=crf, C=10, inference_cache=100,
+                        tol=.1)
+
 
 print "estimating"
 clf.fit(X, Y)
@@ -63,7 +73,16 @@ unary = weights[:unary_weights]
 edges = numpy.zeros((crf.n_states, crf.n_states))
 edges[numpy.tril_indices(crf.n_states)] = weights[unary_weights:]
 
-print 'unary'
-print unary
-print 'edges'
-print edges
+
+with open('results.txt', 'ab') as f :
+    f.write('==============================\n')
+    f.write(str(datetime.datetime.now())+'\n')
+    f.write("Counties\n")
+    f.write(str(base_names)+'\n')
+    f.write("C\n")
+    f.write(str(clf.get_params()['C']))
+    f.write("Unary\n")
+    f.write(str(unary)+'\n')
+    f.write("Edge\n")
+    f.write(str(edges)+'\n')
+

@@ -16,8 +16,6 @@ def example(base_name) :
     features = numpy.ones((len(labels), 1), dtype='float')
     edgelist = edgeList(shapes)
 
-
-
     return (features, edgelist), labels
 
 
@@ -60,8 +58,8 @@ for i, name in enumerate(base_names) :
     Y.append(y)
 
 crf = GraphCRF(n_states=3, n_features=len(city_indicator))
-clf = ssvm.OneSlackSSVM(model=crf, C=10, inference_cache=100,
-                        tol=.1)
+clf = ssvm.NSlackSSVM(model=crf, C=0.0, 
+                      tol=.1)
 
 
 print "estimating"
@@ -69,10 +67,13 @@ clf.fit(X, Y)
 weights = clf.w
 unary_weights = crf.n_states * crf.n_features
 unary = weights[:unary_weights]
+unary = unary.reshape(crf.n_states, crf.n_features)
 
 edges = numpy.zeros((crf.n_states, crf.n_states))
 edges[numpy.tril_indices(crf.n_states)] = weights[unary_weights:]
+print(numpy.tril_indices(crf.n_states))
 
+numpy.set_printoptions(precision=1)
 
 with open('results.txt', 'ab') as f :
     f.write('==============================\n')
@@ -80,7 +81,7 @@ with open('results.txt', 'ab') as f :
     f.write("Counties\n")
     f.write(str(base_names)+'\n')
     f.write("C\n")
-    f.write(str(clf.get_params()['C']))
+    f.write(str(clf.get_params()['C'])+'\n')
     f.write("Unary\n")
     f.write(str(unary)+'\n')
     f.write("Edge\n")

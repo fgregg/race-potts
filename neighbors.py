@@ -5,6 +5,7 @@ import pystruct.learners as ssvm
 import numpy
 import datetime
 import os
+import time
 
 def example(base_name) :
     shapes = pysal.open(base_name + '_county_race.shp','r')
@@ -106,11 +107,17 @@ if __name__ == '__main__' :
 
     unaries = None
 
-    for _ in xrange(1000) :
+    average_time = 0
+    iterations = 1000
+    for i in xrange(1, iterations) :
+        print(i)
+
+        start_time = time.time()
+
         selector = numpy.random.choice(sample_size, sample_size)
 
-        resampled_X = [X[i] for i in selector]
-        resampled_Y = [Y[i] for i in selector]
+        resampled_X = [X[j] for j in selector]
+        resampled_Y = [Y[j] for j in selector]
 
         weights = train(clf, resampled_X, resampled_Y)
         unary, edge = extractWeights(crf, weights)
@@ -123,6 +130,16 @@ if __name__ == '__main__' :
         else :
             unaries = unary
             edges = edge
+
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        
+        average_time += (elapsed_time - average_time)/float(i)
+
+        hours_left = (average_time * (iterations - i))/float(60 * 60)
+        print str(hours_left) + ' hours left'
+        
 
     numpy.save('unaries.npy', unaries)
     numpy.save('edges.py', edges)

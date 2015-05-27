@@ -111,7 +111,7 @@ bg_%.shapes : tl_2014_%_bg.* block_group.table
 	- shp2pgsql -s 4326 -a $(basename $<).shp blockgroups | psql -d $(PG_DB)
 	- touch $@
 
-block_group.table bg_01.shapes : tl_2014_01_bg.* make_db
+block_group.table bg_01.shapes : tl_2014_01_bg.* 
 	shp2pgsql -I -s 4326 -d $(basename $<).shp blockgroups | psql -d $(PG_DB)
 	touch block_group.table
 	touch bg_01.shapes
@@ -131,7 +131,7 @@ bg_%.zip :
 		"COPY $(basename $(word 2,$^)) FROM STDIN WITH CSV HEADER DELIMITER AS ','"
 	touch $@
 
-race.table : san_bernardino_county_race.csv make_db
+race.table : san_bernardino_county_race.csv 
 	csvsql --db "postgresql://$(PG_USER):$(PG_PASS)@$(PG_HOST):$(PG_PORT)/$(PG_DB)" \
 		--tables $(basename $@) $<
 	psql -d $(PG_DB) -c "ALTER TABLE race ADD CONSTRAINT unique_name UNIQUE(\"NAME\")"
@@ -144,10 +144,10 @@ race.table : san_bernardino_county_race.csv make_db
 make_db :
 	createdb $(PG_DB)
 	psql -d $(PG_DB) -c "CREATE EXTENSION postgis"
-	touch $@
 
-drop_race :
+drop_tables :
 	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS race"
+	psql -d $(PG_DB) -c "DROP TABLE IF EXISTS blockgroups"
 	- rm shapes
 	- rm block_group.table
 	- rm race.table

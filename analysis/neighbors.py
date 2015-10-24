@@ -4,7 +4,6 @@ from pystruct.models import GraphCRF
 import pystruct.learners as ssvm
 import numpy
 import datetime
-import os
 import time
 
 def example(base_name) :
@@ -92,11 +91,13 @@ def printParameters(unary, edges, selector, clf, results_file) :
 
 
 if __name__ == '__main__' :
+    import itertools
+    import os
 
     base_names = [name.split('_county_race')[0] 
                   for name in os.listdir('.') 
                   if name.endswith('_race.shp')]
-
+    
     sample_size = len(base_names)
 
     X, Y = trainingData(base_names)
@@ -105,12 +106,18 @@ if __name__ == '__main__' :
     clf = ssvm.NSlackSSVM(model=crf, C=0.0, 
                           tol=.1)
 
-    unaries = None
+    weights = train(clf, X, Y)
+    unary, edge = extractWeights(crf, weights)
+
+    printParameters(unary, edge, base_names, clf, 'param.txt')
+    numpy.save('edge_param', edge)
+
+    unaries = numpy.empty((iterations, 3, sample_size))
+    edges = numpy.empty((iterations, 3, 3))
 
     average_time = 0
     iterations = 1000
-    for i in xrange(1, iterations) :
-        print(i)
+    for i in xrange(1, iterations+1) :
 
         start_time = time.time()
 
@@ -124,14 +131,9 @@ if __name__ == '__main__' :
 
         printParameters(unary, edge, selector, clf, 'bootstrap.txt')
 
-        if unaries is not None :
-            unaries = numpy.dstack((unaries, unary))
-            edges = numpy.dstack((edges, edges))
-        else :
-            unaries = unary
-            edges = edge
+        unaries[i-1, ...] = unary
+        edges[i-1, ...] = edge
 
-        
         end_time = time.time()
         elapsed_time = end_time - start_time
         
@@ -141,7 +143,13 @@ if __name__ == '__main__' :
         print str(hours_left) + ' hours left'
         
 
-    numpy.save('unaries.npy', unaries)
-    numpy.save('edges.py', edges)
-    
+    numpy.save('unaries1.npy', unaries)
+    numpy.save('edges1.py', edges)
+
+    race = {i : race for i, race in enumerate(['white', 'black', 'hispanic'])}
+
+    for j, i in itertools.combinations_with_replacement(race.keys(), 2) :
+        file_name = '%s-%s' % (race[i], race[j])
+        numpy.save(file_name, edges[..., i, j])
+
 

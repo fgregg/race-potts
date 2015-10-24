@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage{lipsum}
+\title{Estimating Social Segregation}
+\author{Forest Gregg}
+
+
+\begin{document}
+\maketitle
+
+
+<<include=FALSE>>=
+library(knitr)
+library(RPostgreSQL)
+library(xtable)
+library(RcppCNPy)
+opts_chunk$set(
+echo=F, fig.width=4.5, fig.height=4.75, fig.path='/home/fgregg/sweave-cache/figs/fig', cache=T, results='hide'
+)
+knit_hooks$set(inline = function(x) {
+  prettyNum(x, big.mark=",")
+@ 
+
+Sociologists know that large scale organization can emerge from local
+interactions of individuals. However, this is largely a
+theoretical insight. Through thought experiments and simulations, we
+can see how racial segregation, flocking behavior, or public order on
+the street could emerge from individuals making simple, local
+adjustments to one another.
+
+Unfortunately, these emergence models have been difficult to test and
+constrain with data. Whether people interact at all is itself the
+result of social process. That process could both cause the
+interaction and the outcome of interest. This often make it impossible
+to distinguish peer influence from unobserved similarity in
+observational data about social networks.\footnotea{shalizi,
+  homophily} Additionally, models where the outcome of one unit is
+interdependent on the outcomes of other units are harder to estimate
+than models that can assume some form of independence. If the outcome
+is discrete, the estimation has lain beyond the realm of practical
+computation.
+
+For the first problem, space is very useful. For social processes that
+occur in geographic space, we can often posit that the interacting
+units are either immediate neighbors or fall with some fixed distance
+of each other. We can fully explain the existence of an interaction
+based upon the observable quality of geographic position. This should
+permit us to estimate interactional effects.
+
+Recent methodological developments from computer vision now make
+possible the estimation of large systems of coupled, discrete
+variables. Using these new methods, we will bring observational data
+to bear the most famous formal model of emergence in sociology, the
+Schelling model of segregation.
+
+\section{intro to schelling}
+
+
+\end{document}

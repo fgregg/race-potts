@@ -27,31 +27,30 @@ opts_chunk$set(
 echo=F, fig.width=4.5, fig.height=4.75, fig.path='/home/fgregg/sweave-cache/figs/fig', cache=T, results='hide'
 )
 knit_hooks$set(inline = function(x) {
-s  prettyNum(x, big.mark=",")
+  prettyNum(x, big.mark=",")
 })
 @ 
 
-Sociologists know that large scale patterns can emerge from local
-interactions of individuals. but this is largely a theoretical
+Sociologists know that large scale patterns can emerge from the local,
+mutual influence of individuals. but this is largely a theoretical
 insight. From thought experiments and simulations, we can see how
 racial segregation, flocking behavior, or public order on the street
 could emerge from individuals making simple, local adjustments to one
 another. Unfortunately, models of emergent order have been hard to
 test empirically.
 
-First, in many social settings, we cannot tell whether Alice jumped
-off the bridge because that's what her friend Bob did; or because
-Alice or Bob are bridge-jumping enthusiasts and that's why they are
-friends; or because they were taking a friendly walk together when the
-bridge was attacked by Godzilla. If we do not have an adequate model
-of why two people are interacting, we cannot distinguish the effects
-of that interaction from unobserved homophily or common
-forces.\footnote{shalizi, homophily}
+First, in many social settings, we cannot statistically identify local
+influence. We cannot tell whether Alice jumped off the bridge because
+that's what her friend Bob did. Maybe Alice jumped because Alice and
+Bob are both bridge-jumping enthusiasts and that's why they are
+friends. If we do not have an adequate model of why two people are
+interacting, we cannot distinguish the effects of that interaction
+from unobserved homophily.\footnote{shalizi, homophily}
 
 Second, models with interdependent units are computationally harder to
 estimate than models with independence.  For models with
 interdependent, discrete outcomes, the estimation has been beyond the
-realm of practical computation.
+realm of practical computation.\footnote{foo}
 
 For the first problem, space is very useful. For many social processes
 that occur in geographic space, we can reasonably posit that the

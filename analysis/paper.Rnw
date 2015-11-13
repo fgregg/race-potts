@@ -31,13 +31,14 @@ knit_hooks$set(inline = function(x) {
 })
 @ 
 
-Sociologists know that large scale patterns can emerge from the local,
-mutual influence of individuals. but this is largely a theoretical
-insight. From thought experiments and simulations, we can see how
-racial segregation, flocking behavior, or public order on the street
-could emerge from individuals making simple, local adjustments to one
-another. Unfortunately, models of emergent order have been hard to
-test empirically.
+Sociologists know that large scale patterns can emerge from the
+local, mutual influence of individuals. From thought experiments and
+simulations, we can see how racial segregation, flocking behavior, or
+public order on the street could emerge from individuals making
+simple, local adjustments to one another. Yet, while emergentist thinking
+has been attractive to sociologists for a long time, there has been no
+substantial empirical program to develop and test theories of how local
+influence result in global patterns. There are couple of reasons.
 
 First, in many social settings, we cannot statistically identify local
 influence. We cannot tell whether Alice jumped off the bridge because
@@ -47,8 +48,8 @@ friends. If we do not have an adequate model of why two people are
 interacting, we cannot distinguish the effects of that interaction
 from unobserved homophily.\footnote{shalizi, homophily}
 
-Second, models with interdependent units are computationally harder to
-estimate than models with independence.  For models with
+Second, models with coupled, interdependent units are computationally
+harder to estimate than models with independence.  For models with
 interdependent, discrete outcomes, the estimation has been beyond the
 realm of practical computation.\footnote{foo}
 

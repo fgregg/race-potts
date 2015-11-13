@@ -3,9 +3,16 @@
 \usepackage{url}
 \usepackage{enumitem}
 \usepackage{lipsum}
+\usepackage{tikz}
+\usepackage{adjustbox}
 \title{Estimating Social Segregation}
 \author{Forest Gregg}
 
+\usetikzlibrary{arrows}
+\usetikzlibrary{bayesnet}
+
+\DeclareMathOperator*{\argmin}{\arg\!\min}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
 
 \begin{document}
 \maketitle
@@ -21,41 +28,73 @@ echo=F, fig.width=4.5, fig.height=4.75, fig.path='/home/fgregg/sweave-cache/figs
 )
 knit_hooks$set(inline = function(x) {
   prettyNum(x, big.mark=",")
+})
 @ 
 
-Sociologists know that large scale organization can emerge from local
+Sociologists know that large scale patterns can emerge from local
 interactions of individuals. However, this is largely a
 theoretical insight. Through thought experiments and simulations, we
 can see how racial segregation, flocking behavior, or public order on
 the street could emerge from individuals making simple, local
 adjustments to one another.
 
-Unfortunately, these emergence models have been difficult to test and
+Unfortunately, these emergence models have been hard to test and
 constrain with data. Whether people interact at all is itself the
 result of social process. That process could both cause the
-interaction and the outcome of interest. This often make it impossible
-to distinguish peer influence from unobserved similarity in
-observational data about social networks.\footnotea{shalizi,
-  homophily} Additionally, models where the outcome of one unit is
-interdependent on the outcomes of other units are harder to estimate
-than models that can assume some form of independence. If the outcome
-is discrete, the estimation has lain beyond the realm of practical
-computation.
+interaction and the outcome of interest. With observational data, we
+often cannot distinguish effects due to peer influence or from
+unobserved similarity.\footnote{shalizi, homophily} Additionally,
+models with interdependent units are computationally harder to
+estimate than models with independence.  For models with
+interdependent discrete outcomes, the estimation has been beyond the
+realm of practical computation.
 
-For the first problem, space is very useful. For social processes that
-occur in geographic space, we can often posit that the interacting
-units are either immediate neighbors or fall with some fixed distance
-of each other. We can fully explain the existence of an interaction
-based upon the observable quality of geographic position. This should
-permit us to estimate interactional effects.
+For the first problem, space is very useful. For many social processes
+that occur in geographic space, we can posit that the
+interacting units are either immediate neighbors or fall with some
+fixed distance of each other. We can fully explain the existence
+of an interaction from an observable quality---geographic
+position, and so we can separately estimate interaction effects.
 
-Recent methodological developments from computer vision now make
-possible the estimation of large systems of coupled, discrete
-variables. Using these new methods, we will bring observational data
-to bear the most famous formal model of emergence in sociology, the
-Schelling model of segregation.
+New methods from computer vision now make it possible to estimate 
+large systems of coupled, discrete variables. Using these methods,
+we will bring observational data to bear the most famous formal model
+of emergence in sociology, the Schelling model of segregation.
 
-\section{intro to schelling}
+\section{intro to Schelling}
+In his 1971 paper ``Dynamic Models of Segregation'' Thomas Schelling
+showed that complete residential racial segregation could emerge
+through people preferring to live in houses surrounded mostly by neighbors
+of their same race. Segregation could emerge even if individual racism
+was mild or even if only one group was racist.
+
+In his model, residential locations were divided into a
+checkerboard. At the beginning, white and black agents are distributed
+randomly across the board. There are more locations than there are
+agents, so there are vacant locations. Agents are discontent if a
+certain percentage of their neighbors or not of the same color.Time
+proceeds in steps.  At every step, all the individuals who were
+discontent at the end of the last step move to the nearest location
+that makes them content.
+
+Schelling ran a series of variations, changing the number of vacancies,
+the number of neighbors that the agent considered relevant, and the
+intensity of color preference. In every variant, after enough time
+steps, the white and black agents are spatially segregated. 
+
+While the piece is about racial segregation, Schelling's models are
+not models of observed racial segregation in actual cities. The
+results of Schelling's models resemble maps of racial segregation in
+American cities, but, in 1971, Schelling had no way of testing whether
+observed racial segregation was consistent with his models. That only
+became feasible in the 2000s with the development of a method called
+Structured Support Vector Machines.
+
+\input{theory_and_math.tex}
+
+
+
+
 
 
 \end{document}

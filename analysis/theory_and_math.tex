@@ -1,12 +1,21 @@
-\section*{Neighborhood Model Representation}
-Let's imagine a very small city consisting of four blocks. We can
-represent this tiny town as a network where each block is connected
-to the blocks that share a street segment as a block face. In this
+\section*{Racial Preferences to Residential Segregation}
+In this section, we will introduce a formalism for describing the
+compatibility between residential patterns across a city and
+individual racist preferences. 
+
+Let's imagine a very small city consisting of blocks. Only one house
+lives on each block. In this city are two white household and two
+black households. The white households prefer to live next to whites
+and the black household prefer to live next to blacks. 
+
+We can represent this tiny town as a network where each block is
+connected to the blocks that front the same street. In this
 representation, blocks that are kitty corner are not directly
 connected. We'll index the blocks as $1$, $2$, $3$, and $4$.
 
 \begin{figure}[h]
-\centering
+  \centering
+  \begin{tabular}{cc}
 \tikz{
 \draw[help lines] (0,0) grid (2,2);
 \node at (0.5, 0.5) {3} ;
@@ -14,11 +23,7 @@ connected. We'll index the blocks as $1$, $2$, $3$, and $4$.
 \node at (0.5, 1.5) {1} ;
 \node at (1.5, 0.5) {4} ;
 }
-\end{figure}
-
-\begin{figure}[h]
-\centering
-
+\\
 \tikz{ %
   \node[latent] (1) {$1$} ; %
   \node[latent, below left=of 1] (2) {$2$} ; %
@@ -27,18 +32,14 @@ connected. We'll index the blocks as $1$, $2$, $3$, and $4$.
   \edge[-] {2,3} {1} ; %
   \edge[-] {2,3} {4} ; %
 }
-
+\end{tabular}
 \end{figure}
 
-Suppose that, in our city, there are two neighborhoods. Each block
-belongs to either one or the other of these neighborhoods. Neighboring
-blocks that are similar are more apt to belong to the same
-neighborhood and neighboring blocks that are different are more apt to
-belong to different neighborhoods. Only neighboring blocks can belong
-to the same neighborhood.
-
-We will denote the neighborhood that the $i$th block belongs to as
-$y_i$, and the similarity between blocks $i$ and $j$ as $\phi_{i,j}$.
+In our city, each block is inhabited by only a white household or
+only a black household. We will denote the race of the $i$th
+block as $y_i$. Between every pair of neighbors, there is a racial
+match score $\phi_{i,j}$ indicating how much happier they would be if their
+racial preferences were fulfilled.
 
 \begin{figure}[!h]
 \centering
@@ -61,15 +62,10 @@ $y_i$, and the similarity between blocks $i$ and $j$ as $\phi_{i,j}$.
 
 \end{figure}
 
-We want similar, neighboring blocks to belong to the same
-neighborhood. One way to formalize this desire is to score every possible
-assignment of neighborhoods in such a way that our preferred patterns
-have the best score.
 
-Denote a particular pattern of assignment of blocks to neighborhoods
-as $\mathbf{y}$.  The score of $\mathbf{y}$ will be
-$\operatorname{E}(\mathbf{y})$\footnote{$\operatorname{E}$ as in
-  energy not expectation} which will take the following form:
+Denote a particular residential pattern as $\mathbf{y}$.  We can score
+every single residential pattern on how much it matches individual
+household preferences.
 
 \begin{align}
 \operatorname{E}(\mathbf{y}) = \sum_{<i j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j,\phi_{i,j})
@@ -79,68 +75,16 @@ Where $\mathcal{N}$ is the set of pairs of indices of neighboring
 blocks and the index of the first block is smaller than the index of
 the second block. Also, where
 
+
 \begin{equation}
 \epsilon_{i,j}(y_i,y_j\phi_{i,j}) = \begin{cases}
-  0 &y_i = y_j \\
-  \phi_{i,j} &y_i \neq y_j
+  \phi_{i,j}   &y_i = y_j \\
+  0  &y_i \neq y_j
 \end{cases}
 \end{equation}
 
-Suppose that we want our preferred neighborhood assignment to have the
-lowest score. If our similarity measures $\phi_{i,j}$ are positive
-when blocks are similar and negative when blocks are different, then
-we will encourage neighboring blocks to belong to the same
-neighborhood. Let our city have the following $\phi$'s.
-
-\begin{align*}
-&\phi_{1,2} = 1 \\
-&\phi_{1,3} = -1 \\
-&\phi_{2,4} = -1 \\
-&\phi_{3,4} = 1
-\end{align*} 
-
-Then, the assignments with the lowest scores are the ones that put
-blocks $1$ and $2$ in one neighborhood and $3$ and $4$ in the other
-neighborhood.
-
-\begin{table}
-\centering
-  \begin{tabular}{cc}
-      \tikz{ %
-        \node[latent] (1) {$y_1$} ; %
-        \node[latent, below left=of 1] (2) {$y_2$} ; %
-        \node[latent, fill=black, below right=of 1] (3) {\textcolor{white}{$y_3$}} ; %
-        \node[latent, fill=black, below left=of 3] (4) {\textcolor{white}{$y_4$}} ; %
-        \factor[below left=of 1] {1-2} {$1$} {} {} ;
-        \factor[below right=of 1] {1-3} {$-1$} {} {} ;
-        \factor[below right=of 2] {2-4} {$-1$} {} {} ;
-        \factor[below left=of 3] {3-4} {$1$} {} {} ;
-        \factoredge[-] {1} {1-2} {2} ; %
-        \factoredge[-] {1} {1-3} {3} ; %
-        \factoredge[-] {2} {2-4} {4} ; %
-        \factoredge[-] {3} {3-4} {4} ; %
-      } 
-    &
-      \tikz{ %
-        \node[latent, fill=black] (1) {\textcolor{white}{$y_1$}} ; %
-        \node[latent, fill=black, below left=of 1] (2) {\textcolor{white}{$y_2$}} ; %
-        \node[latent, below right=of 1] (3) {$y_3$} ; %
-        \node[latent, below left=of 3] (4) {$y_4$} ; %
-        \factor[below left=of 1] {1-2} {$1$} {} {} ;
-        \factor[below right=of 1] {1-3} {$-1$} {} {} ;
-        \factor[below right=of 2] {2-4} {$-1$} {} {} ;
-        \factor[below left=of 3] {3-4} {$1$} {} {} ;
-        \factoredge[-] {1} {1-2} {2} ; %
-        \factoredge[-] {1} {1-3} {3} ; %
-        \factoredge[-] {2} {2-4} {4} ; %
-        \factoredge[-] {3} {3-4} {4} ; %
-      } 
-    \\
-  \end{tabular}
-  \caption{Preferred Assignment: If $y_i = 0$, the block is colored
-    white. If $y_i = 1$, the block is black.}
-  \label{table:lowest}
-\end{table}
+Let $\phi_{i,j}=1$ for all $i$ and $j$. Racially segregated
+residential patterns have higher scores than integrated patterns (Table~\ref{table:energy}).
 
 \begin{table}[h]
 \input{energy_table.tex}
@@ -149,8 +93,7 @@ neighborhood.
 \end{table}
 
 In our little city with two neighborhoods, there are two ways of
-assigning blocks to neighborhoods that minimizes the score (Table
-\ref{table:energy}). In general, for a given set of similarity
+assigning blocks to neighborhoods that minimizes the score . In general, for a given set of similarity
 measures between blocks, there will be a set of assignments that have
 a lowest score. For small networks, we can find these best assignments
 by checking all possible patterns of assignments. Unfortunately, this

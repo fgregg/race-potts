@@ -6,9 +6,9 @@ import numpy
 import datetime
 import time
 
-def example(base_name) :
-    shapes = pysal.open(base_name + '_county_race.shp','r')
-    dbf = pysal.open(base_name + '_county_race.dbf', 'r')
+def example(base_name, data_path) :
+    shapes = pysal.open(data_path + base_name + '_county_race.shp','r')
+    dbf = pysal.open(data_path + base_name + '_county_race.dbf', 'r')
 
     # no features
     labels = numpy.fromiter(raceLabelGen(dbf), 
@@ -39,14 +39,14 @@ def edgeList(shapes) :
 
     return numpy.array(sorted(edgelist))
 
-def trainingData(base_names) :
+def trainingData(base_names, data_path) :
     X = []
     Y = []
 
     city_indicator = numpy.zeros(len(base_names))
 
     for i, name in enumerate(base_names) :
-        x, y = example(name)
+        x, y = example(name, data_path)
         features, edgelist = x
         n_nodes = features.shape[0]
         features = city_indicator.copy()
@@ -94,13 +94,16 @@ if __name__ == '__main__' :
     import itertools
     import os
 
+    data_path = '../data/'
+    iterations = 1000
+
     base_names = [name.split('_county_race')[0] 
-                  for name in os.listdir('.') 
+                  for name in os.listdir(data_path) 
                   if name.endswith('_race.shp')]
-    
+
     sample_size = len(base_names)
 
-    X, Y = trainingData(base_names)
+    X, Y = trainingData(base_names, data_path)
 
     crf = GraphCRF(n_states=3, n_features=sample_size)
     clf = ssvm.NSlackSSVM(model=crf, C=0.0, 
@@ -116,7 +119,6 @@ if __name__ == '__main__' :
     edges = numpy.empty((iterations, 3, 3))
 
     average_time = 0
-    iterations = 1000
     for i in xrange(1, iterations+1) :
 
         start_time = time.time()

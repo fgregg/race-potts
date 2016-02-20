@@ -99,15 +99,45 @@ Structured Support Vector Machines.
 We now estimate the racial frustration costs from the observed
 residential patterns of the 49 most populous American counties (Table~\ref{tab:counties}) .
 
+<<countyTable, results='asis'>>=
+library(RPostgreSQL)
+con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(), dbname="segregation")
+
+counties <- DBI::dbGetQuery(con, 
+    "SELECT name[3] || ', ' || name[4] AS place, 
+            SUM(total)::INT AS population,
+            SUM(white)::INT AS white,
+            SUM(black)::INT AS black,
+            SUM(hispanic)::INT AS hispanic
+     FROM (SELECT REGEXP_SPLIT_TO_ARRAY(\"NAME\", ', ') AS name, 
+                  \"B03002_001E\" AS total,
+	          \"B03002_003E\" as white, 
+	          \"B03002_004E\" as black, 
+                  \"B03002_012E\" as hispanic
+           FROM race) AS t 
+     GROUP BY name[3] || ', ' || name[4] ORDER BY SUM(total) DESC")
+
+names(counties) <- c("County", "Total Population", "White", "Black", "Hispanic")
+
+
+n_blockgroups <- DBI::dbGetQuery(con, "SELECT COUNT(*) FROM race")
+    
+print(xtable(counties,
+             caption="Populations of 49 Largest Counties",
+             label="tab:counties"),
+      format.args = list(big.mark = ","),
+      include.rownames=FALSE)
+@ 
+
 From the 2010-2015 ACS 5-Year Estimates, we pull the population of
 Hispanics, Non-Hispanic Whites, and Non-Hispanic African Americans for
 every block group in all the counties.\footnote{Census API} For every
-blockgroup, we label the block group as Hispanic, White, or Black
+block group, we label the block group as Hispanic, White, or Black
 based on which group is most common in the block group.  Using the
 associated 2014 TIGER/Line Shapefiles, we calculate the adjacency
 matrix for the
 blockgroups\footnote{https://www.census.gov/geo/maps-data/data/tiger.html,
-  PySAL}.
+  PySAL}. There are \Sexpr{n_blockgroups} block groups in the data.
 
 We'll use these data to estimate the parameters of the following score
 function. 
@@ -137,11 +167,11 @@ In addition,
 
 
 \begin{align}
-  \e_{i} = b_0 + b_1\operatorname{B_1}(y_{i}) 
+  \epsilon_{i} = b_0 + b_1\operatorname{B_1}(y_{i}) 
           b_2\operatorname{H_1}(y_{i}) + b_3\operatorname{B_2}(y_{i}) 
           + b_4\operatorname{B_2}(y_{i}) + b_5\operatorname{H_2}(y_{i}) 
           + ... + b_{144}\operatorname{B_{49}}(y_{i}) +
-          b_{145}\operatorname{B_{49}}(y_i) + b_{146}\operatorname(H_{49}}(y_i)
+          b_{145}\operatorname{B_{49}}(y_i) + b_{146}\operatorname{H_{49}}(y_i)
 \end{align}
 
 where $\operatorname{W_k}$, $\operatorname{B_k}$, $\operatorname{H_k}$
@@ -154,34 +184,30 @@ We estimate all the parameters using the PyStruct library. In order to
 evaluate the robustness of the parameters, we bootstrap a sampling
 distribution of the parameters by sampling with replacement from the
 49 counties, estimating the parameters on the sample, recording the
-results, and repeating 1000 times.
+results, and repeating 1000 times. Using the a percentile bootstrap,
+we to estimate the confidence intervals for the parameters.
 
-<<countyTable, results='asis'>>=
-library(RPostgreSQL)
-con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(), dbname="segregation")
+In Table~\ref{tab:parameters}, we have the parameters for racial
+preferences. The values may seem very small, but this is due to the
+constraint that $\sqrt{\sum_i^M w_i^2 = 1}$ for the 153
+parameters. The racial preference parameters are between one to three
+orders of magnitude greater than the city specific bias terms.
 
-counties <- DBI::dbGetQuery(con, 
-    "SELECT name[3] || ', ' || name[4] AS place, 
-            SUM(total)::INT AS population,
-            SUM(white)::INT AS white,
-            SUM(black)::INT AS black,
-            SUM(hispanic)::INT AS hispanic
-     FROM (SELECT REGEXP_SPLIT_TO_ARRAY(\"NAME\", ', ') AS name, 
-                  \"B03002_001E\" AS total,
-	          \"B03002_003E\" as white, 
-	          \"B03002_004E\" as black, 
-                  \"B03002_012E\" as hispanic
-           FROM race) AS t 
-     GROUP BY name[3] || ', ' || name[4] ORDER BY SUM(total) DESC")
+If a racial or ethnic preference parameter is positive, then blocks of
+that type should tend to be neighbors, all else equal. If a preference
+parameter is negative, then blocks of that type should tend to not be
+neighbors. The signs of the parameter align with expectations. Each
+racial and ethnic groups tend to live among their own group. White and
+black blocks, and Hispanic and black groups tend to not to
+neighbor. Interestingly, the parameter for white and Hispanic groups
+is positives, suggesting that white and Hispanic groups should tend to
+neighbor, all else being equal. 
 
-names(counties) <- c("County", "Total Population", "White", "Black", "Hispanic")
+Only two parameters have 95\% confidence intervals that do not cover
+0. 
 
-print(xtable(counties,
-             caption="Populations of 49 Largest Counties",
-             label="tab:counties"),
-      format.args = list(big.mark = ","),
-      include.rownames=FALSE)
-@ 
+
+
 
 <<bootstrap>>=
 library(RcppCNPy)
@@ -198,20 +224,28 @@ bb <- load("black-black")
 hb <- load("hispanic-black")
 hh <- load("hispanic-hispanic")
 
-
-par(mfrow=c(3,3))
-hist(ww)
-hist(bw)
-hist(hw)
-plot.new()
-hist(bb)
-hist(hb)
-plot.new()
-plot.new()
-hist(hh)
-par(mfrow=c(1,1))
-
+edges <- load("edge_param")
 @ 
+
+
+<<parameters, results='asis'>>=
+confidence_end_points <- c(0.025, 0.975)
+
+edge_parameters <- rbind(
+    "White-White"=c(edges[1,1], quantile(ww, confidence_end_points)),
+    "White-Black"=c(edges[2,1], quantile(bw, confidence_end_points)),
+    "White-Hispanic"=c(edges[3,1], quantile(hw, confidence_end_points)),
+    "Black-Black"=c(edges[2,2], quantile(bb, confidence_end_points)),
+    "Black-Hispanic"=c(edges[3,2], quantile(hb, confidence_end_points)),
+    "Hispanic-Hispanic"=c(edges[3,3], quantile(hh, confidence_end_points)))
+
+colnames(edge_parameters) <- c("Estimate", "2.5%", "97.5%")
+      
+xtable(edge_parameters, digits=-2, caption="Racial Preference Parameters, 95% Confidence Intervals (Percentile Bootstrap)",
+       label="tab:parameters")
+@ 
+
+
 
 
 \end{document}
@@ -234,3 +268,18 @@ par(mfrow=c(1,1))
   immigrant neighborhood.'
 }
 
+ 
+<<hist>>= 
+par(mfrow=c(3,3))
+hist(ww)
+hist(bw)
+hist(hw)
+plot.new()
+hist(bb)
+hist(hb)
+plot.new()
+plot.new()
+hist(hh)
+par(mfrow=c(1,1))
+
+@ 

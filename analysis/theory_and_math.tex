@@ -1,18 +1,19 @@
 \section*{From Racial Preferences to Residential Segregation}
-In this section, we introduce the problem of finding an residential
+We now introduce the formal problem of finding an residential
 pattern that is most compatible with the racial preferences of
-individual households.
+individual households. This will give us the formal description of the
+problem that the structured support vector machine solves
 
-Let's imagine a very small city consisting of blocks. Only one house
-lives on each block. In this city are two white household and two
+Let's imagine a very small city consisting of four blocks. Only one household
+lives on each block. In this city lives two white households and two
 black households. The white households prefer to live next to whites
-and the black household prefer to live next to blacks. What
+and the black households prefer to live next to blacks. What
 residential patterns are most compatible with those preferences?
 
 We can represent this tiny town as a network where each block is
 connected to the blocks that front the same street. In this
 representation, blocks that are kitty corner are not directly
-connected. We'll index the blocks as $1$, $2$, $3$, and $4$.
+connected. We'll index the blocks as $1$, $2$, $3$, and $4$ (Figure~\ref{fig:tiny-town}).
 
 \begin{figure}[h]
   \centering
@@ -33,14 +34,17 @@ connected. We'll index the blocks as $1$, $2$, $3$, and $4$.
   \edge[-] {2,3} {1} ; %
   \edge[-] {2,3} {4} ; %
 }
-\end{tabular}
+  \end{tabular}
+  \caption{City Blocks and Network Representation}
+  \label{fig:tiny-town}
 \end{figure}
 
-In our city, each block is inhabited by only a white household or
-only a black household. We will denote the race of the $i$th
-block as $y_i$. Between every pair of neighbors, there is a racial
-frustration cost $\phi_{i,j}$ indicating how unhappy they are if their
-racial preferences are frustrated.
+In our city, each block is inhabited by only a white household or only
+a black household. We will denote the race of the $i$th block as
+$y_i$. Between every pair of neighbors, there is a racial
+compatibility score function $\epsilon_{i,j}$ indicating how happy or
+unhappy they are with the race of their neighbors
+(Figure~\ref{fig:variables}).
 
 \begin{figure}[!h]
 \centering
@@ -50,41 +54,42 @@ racial preferences are frustrated.
   \node[latent, below left=of 1] (2) {$y_2$} ; %
   \node[latent, below right=of 1] (3) {$y_3$} ; %
   \node[latent, below left=of 3] (4) {$y_4$} ; %
-  \factor[below left=of 1] {1-2} {$\phi_{1,2}$} {} {} ;
-  \factor[below right=of 1] {1-3} {$\phi_{1,3}$} {} {} ;
-  \factor[below right=of 2] {2-4} {$\phi_{2,4}$} {} {} ;
-  \factor[below left=of 3] {3-4} {$\phi_{3,4}$} {} {} ;
+  \factor[below left=of 1] {1-2} {$\epsilon_{1,2}$} {} {} ;
+  \factor[below right=of 1] {1-3} {$\epsilon_{1,3}$} {} {} ;
+  \factor[below right=of 2] {2-4} {$\epsilon_{2,4}$} {} {} ;
+  \factor[below left=of 3] {3-4} {$\epsilon_{3,4}$} {} {} ;
   \factoredge[-] {1} {1-2} {2} ; %
   \factoredge[-] {1} {1-3} {3} ; %
   \factoredge[-] {2} {2-4} {4} ; %
   \factoredge[-] {3} {3-4} {4} ; %
   %\edge[-] {2,3} {4} ; %
 }
-
+\caption{Variables in the Network}
+\label{fig:variables}
 \end{figure}
 
 Denote a particular residential pattern as $\mathbf{y}$.  Every 
-residential pattern has a cost that depending on how much it
-frustrates individual household racial preferences. 
+residential pattern has a score of how compatible it is with
+the racial preferences for neighbors.
 
 \begin{align}
-\operatorname{C}(\mathbf{y}) = \sum_{<i j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j,\phi_{i,j})
+\operatorname{E}(\mathbf{y}) = \sum_{<i j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j)
 \end{align}
 
 Where $\mathcal{N}$ is the set of pairs of indices of neighboring
 blocks and the index of the first block is smaller than the index of
-the second block. Also, where
+the second block. Also, 
 
 \begin{equation}
-  \epsilon_{i,j}(y_i,y_j\phi_{i,j}) = \begin{cases}
-    0  &y_i = y_j \\
-    \phi_{i,j}  &y_i \neq y_j
-  \end{cases}
+  \epsilon_{i,j}(y_i,y_j) = w_o\operatorname{I}(y_i \neq y_j)
 \end{equation}
 
-Let $\phi_{i,j}=1$ for all $i$ and $j$. Racially segregated
-residential patterns have lower costs than integrated patterns
-(Table~\ref{table:energy}).
+where $\operatorname{I}(y_i \neq y_j)$ is an indicator function that
+takes a value of 1 if blocks $i$ and $j$ are inhabited by different
+races and a value of 0 otherwise.
+
+Let $w_o=1$. Racially segregated residential patterns will have lower,
+better scores than integrated patterns (Table~\ref{table:energy}).
 
 \begin{table}[h]
 \input{energy_table.tex}
@@ -132,37 +137,40 @@ approximately find, the lowest scoring pattern for score functions
 that have the following form.
 
 \begin{align}
-\operatorname{E}(\mathbf{y}) = \sum_{<i j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j)
+\operatorname{E}(\mathbf{y}) = \sum_{<i
+  j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j) + \sum_i^N\epsilon_i{y_i}
 \end{align}
 
 \section*{From Segregation to Racial Preferences}
 If we can quickly find a residential pattern that is most compatible
 with given racial preferences, we can also \emph{learn} racial
 preferences from observed patterns of residential segregation. The
-machinery for this is called structured SVM. 
+machinery for this is called structured support vector machine. 
 
 Say we have the observed residential patterns from $M$ cities and we
-want to learn how the levels of household racial preferences
-vary. Consider a racial frustration cost like
+want to estimate racial compatibility scores. Consider a racial
+compatibility function like.
 
 \begin{align}
-  \phi_{i,j} = w_0 + w_1\operatorname{I_1}(x_{i}, x_{j}) +
-  w_2\operatorname{I_2}(x_{i}, x_{j}) + ... +
-  w_{m-1}\operatorname{S_n}(x_{i},x_{j})  
+  \epsilon_{i,j}(y_i,y_j) = w_o\operatorname{WW}(y_{i}, y_{j}) +
+  w_1\operatorname{WB}(y_{i}, y_{j}) + w_2\operatorname{BB}(y_{i}, y_{j})
 \end{align} 
 
-Where $\operatorname{I_k}$ is an indicator function that takes a value
-of 1 if the blocks $x_{i}$ and $x_j$ are in city $k$, and 0 otherwise.
+Where $\operatorname{WW}$ is an indicator function that takes a value
+of 1 if blocks $i$ and $j$ are inhabited by whites,
+$\operatorname{WB}$ indicates that the blocks are inhabited by a white
+household and black household, and $\operatorname{BB}$ indicates that
+both blocks are inhabited by black households.
 
-Given this choice of form, learning a city's racial frustration level
-means finding the vector of weights $\mathbf{w}: \{w_0, w_1, ..., w_{m-1}\}$ that give our observed residential patterns a lower
+Given this choice of form, learning the racial compatibility function
+means finding the vector of weights $\mathbf{w}: \{w_0, w_1, w_2\}$ that give our observed residential patterns a lower
 cost than any other possible residential pattern.
 
 However, this learning problem does not have a unique
 solution. Remember in our four block city, the segregated residential
-pattern had the best score when the racial frustration cost was
-1. Those same residential patterns would have had the lowest cost if
-the frustration cost had been 2 or 1000 or any postive number.
+pattern had the best score when $w_o$ was 1. Those same residential
+patterns would have had the lowest cost if the $w_0$ had been 2 or
+1000 or any postive number.
 
 In order to specify a unique solution, we need to add two
 constraints. First, we will go beyond requiring that the preferred
@@ -178,16 +186,16 @@ Se can state the problem as
 \begin{align*}
 &\argmax_{\mathbf{w}:||\mathbf{w}||=1} \mathbf{\gamma} \\
 &\text{such that} \\
-&\operatorname{E}(\mathbf{y}, \mathbf{I}, \mathbf{w})
-- \operatorname{E}(\mathbf{y}^*, \mathbf{I}, \mathbf{w}) \geq \gamma\\ 
+&\operatorname{E}(\mathbf{y}, \mathbf{RR}, \mathbf{w})
+- \operatorname{E}(\mathbf{y}^*, \mathbf{RR}, \mathbf{w}) \geq \gamma\\ 
 &\text{for all } \mathbf{y} \text{ where } \mathbf{y} \text{ is in the set of
   possible neighborhood assignments}\\
 &\text{and } \mathbf{y} \neq \mathbf{y}^*
 \end{align*}
 %
 
-Here $\mathbf{y}*$ are the observed residential patterns and $\mathbf{I}$
-are the city specific indicator functions.
+Here $\mathbf{y}*$ are the observed residential patterns and $\mathbf{RR}$
+are the race-of-block indicators functions
 
 This is a large margin problem, and problems of this form have and
 equivalent canonical representation, which is a quadratic programming
@@ -197,8 +205,8 @@ problem.
 \begin{align*}
 &\argmin_{\mathbf{w}} \frac{1}{2}||\mathbf{w}||^2 \\
 &\text{such that} \\
-&\operatorname{E}(\mathbf{y}, \mathbf{I}, \mathbf{w})
-- \operatorname{E}(\mathbf{y}^*, \mathbf{I}, \mathbf{w}) \geq 1 \\ 
+&\operatorname{E}(\mathbf{y}, \mathbf{RR}, \mathbf{w})
+- \operatorname{E}(\mathbf{y}^*, \mathbf{RR}, \mathbf{w}) \geq 1 \\ 
 &\text{for all } \mathbf{y} \text{ where } \mathbf{y} \text{ is in the set of
   possible neighborhood assignments}\\
 &\text{and } \mathbf{y} \neq \mathbf{y}^*
@@ -220,8 +228,8 @@ Update the weights by solving the quadratic program:
 \begin{align*}
 &\argmin_{\mathbf{w}} \frac{1}{2}||\mathbf{w}||^2 \\
 &\text{such that} \\
-&\operatorname{E}(\mathbf{y}, \mathbf{I}, \mathbf{w})
-- \operatorname{E}(\mathbf{y}^*, \mathbf{I}, \mathbf{w}) \geq 1 \\ 
+&\operatorname{E}(\mathbf{y}, \mathbf{RR}, \mathbf{w})
+- \operatorname{E}(\mathbf{y}^*, \mathbf{RR}, \mathbf{w}) \geq 1 \\ 
 &\text{for all } \mathbf{y} \text{ where } \mathbf{y} \text{ is in } \mathcal{S}\\
 &\text{and } \mathbf{y} \neq \mathbf{y}^*
 \end{align*}

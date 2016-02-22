@@ -3,9 +3,11 @@
 \usepackage{url}
 \usepackage{enumitem}
 \usepackage{lipsum}
+\usepackage{natbib}
+\usepackage{endnotes}
 \usepackage{tikz}
 \usepackage{adjustbox}
-\title{Estimating Social Segregation}
+\title{Estimating Emergent Phenomena}
 \author{Forest Gregg}
 
 \usetikzlibrary{arrows}
@@ -13,6 +15,9 @@
 
 \DeclareMathOperator*{\argmin}{\arg\!\min}
 \DeclareMathOperator*{\argmax}{\arg\!\max}
+
+\let\footnote=\endnote
+\let\cite=\citep
 
 \begin{document}
 \maketitle
@@ -45,31 +50,25 @@ that's what her friend Bob did. Maybe Alice jumped because Alice and
 Bob are both bridge-jumping enthusiasts and that's why they are
 friends. If we do not have an adequate model of why two people are
 interacting, we cannot distinguish the effects of that interaction
-from unobserved homophily.\footnote{shalizi, homophily}
+from unobserved homophily.\cite{shalizi_homophily_2011}
 
 Second, models with coupled, interdependent units are computationally
 harder to estimate than models with independence.  For models with
 interdependent, discrete outcomes, the estimation has been beyond the
-realm of practical computation.\footnote{foo}
+realm of practical computation.
 
-For the first problem, space is very useful. For many social processes
-that occur in geographic space, we can reasonably posit that the
-influencing units are either immediate neighbors or fall with some
-fixed distance of each other.\footnote{grannis} Because we have a
-model of which units influence one another, we can identify the
-effects of that influence.
+In this paper, we will focus on this second, technical problem. We
+introduce a method called the structured support vector machine, that
+can estimate large systems of coupled, discrete variables. With this
+method, we will bring observational data to bear the most famous
+formal model of emergent order in urban sociology, the Schelling model
+of segregation.
 
-For the second problem, new methods from computer vision now make it
-possible to estimate large systems of coupled, discrete
-variables. Using these methods, we will bring observational data to
-bear the most famous formal model of emergent order in urban
-sociology, the Schelling model of segregation.
-
-\section{intro to Schelling}
+\section*{Schelling's Emergent Segregation}
 In his 1971 paper ``Dynamic Models of Segregation'' Thomas Schelling
 showed that complete residential racial segregation could emerge
 through people preferring, even slightly, to live in houses surrounded
-mostly by neighbors of their same race.
+mostly by neighbors of their same race.\cite{schelling_dynamic_1971}
 
 In his model, residential locations were divided into a
 checkerboard. At the beginning, white and black agents are distributed
@@ -85,13 +84,13 @@ the number of neighbors that the agent considered relevant, and the
 intensity of color preference. In every variant, after enough time
 steps, the white and black agents are spatially segregated. 
 
-While his piece is about racial segregation, Schelling does not
-attempt to model the actual observed racial segregation of American
-cities. While the results of Schelling's models resemble maps of
-racial segregation in American cities, he had no way to test whether
-his models were consistent with observed reality. That only became
-feasible in the 2000s with the development of a method called
-Structured Support Vector Machines.
+This was a wholly abstract model. Schelling With the tools Schelling
+had, he could not go beyond an extended thought experiment. He had no
+way to test this mechanism against other possible explanations, or
+even whether the model was consistent with observed residential
+segregation in American cities. The necessary techniques for that
+became available in the 2000s with the development of a method called
+structured support vector machines.
 
 \input{theory_and_math.tex}
 
@@ -105,10 +104,10 @@ con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(), dbname="segregation")
 
 counties <- DBI::dbGetQuery(con, 
     "SELECT name[3] || ', ' || name[4] AS place, 
-            SUM(total)::INT AS population,
-            SUM(white)::INT AS white,
-            SUM(black)::INT AS black,
-            SUM(hispanic)::INT AS hispanic
+            SUM(total)/1000000::FLOAT AS population,
+            SUM(white)/1000000::FLOAT AS white,
+            SUM(black)/1000000::FLOAT  AS black,
+            SUM(hispanic)/1000000::FLOAT AS hispanic
      FROM (SELECT REGEXP_SPLIT_TO_ARRAY(\"NAME\", ', ') AS name, 
                   \"B03002_001E\" AS total,
 	          \"B03002_003E\" as white, 
@@ -123,21 +122,20 @@ names(counties) <- c("County", "Total Population", "White", "Black", "Hispanic")
 n_blockgroups <- DBI::dbGetQuery(con, "SELECT COUNT(*) FROM race")
     
 print(xtable(counties,
-             caption="Populations of 49 Largest Counties",
+             caption="Populations of 49 Largest Counties (In Millions)",
              label="tab:counties"),
-      format.args = list(big.mark = ","),
+      digits=2,
       include.rownames=FALSE)
 @ 
 
 From the 2010-2015 ACS 5-Year Estimates, we pull the population of
 Hispanics, Non-Hispanic Whites, and Non-Hispanic African Americans for
-every block group in all the counties.\footnote{Census API} For every
+every block group in all the counties.\cite{bureau_american_????} For every
 block group, we label the block group as Hispanic, White, or Black
 based on which group is most common in the block group.  Using the
 associated 2014 TIGER/Line Shapefiles, we calculate the adjacency
 matrix for the
-blockgroups\footnote{https://www.census.gov/geo/maps-data/data/tiger.html,
-  PySAL}. There are \Sexpr{n_blockgroups} block groups in the data.
+blockgroups\cite{tiger/line_????,rey_pysal:_2007}. There are \Sexpr{n_blockgroups} block groups in the data.
 
 We'll use these data to estimate the parameters of the following score
 function. 
@@ -150,12 +148,12 @@ function.
 Where 
 
 \begin{align}
-  \epsilon_{i,j} = w_0\operatorname{WW}(x_{i}, x_{j}) +
+  \epsilon_{i,j} = &w_0\operatorname{WW}(x_{i}, x_{j}) +
   w_1\operatorname{WB}(x_{i}, x_{j}) + 
-  w_2\operatorname{WH}(x_{i}, x_{j}) +
-  w_3\operatorname{BB}(x_i, x_j) +
+  w_2\operatorname{WH}(x_{i}, x_{j}) \\
+  &+ w_3\operatorname{BB}(x_i, x_j) +
   w_4\operatorname{BH}(x_i, x_j) +
-  w_5\operatorname{HH}(x_i, x_j) +
+  w_5\operatorname{HH}(x_i, x_j)
 \end{align} 
 
 and $\operatorname{WW}$ indicates that block $i$ and $j$ are both
@@ -165,13 +163,16 @@ and ``Black'' block; $\operatorname{WH}$ indicates indicates a
 
 In addition, 
 
-
 \begin{align}
-  \epsilon_{i} = b_0 + b_1\operatorname{B_1}(y_{i}) 
-          b_2\operatorname{H_1}(y_{i}) + b_3\operatorname{B_2}(y_{i}) 
-          + b_4\operatorname{B_2}(y_{i}) + b_5\operatorname{H_2}(y_{i}) 
-          + ... + b_{144}\operatorname{B_{49}}(y_{i}) +
-          b_{145}\operatorname{B_{49}}(y_i) + b_{146}\operatorname{H_{49}}(y_i)
+  \epsilon_{i} = w_6 + & w_7\operatorname{W_1}(y_{i}) +  
+          w_{10}\operatorname{H_1}(y_{i}) + w_{11} +
+          w_{12}\operatorname{B_1}(y_i) \\
+          + &w_{12}\operatorname{W_2}(y_{i}) +
+          w_{13}\operatorname{H_2}(y_{i}) +
+          w_{14}\operatorname{B_2}(y_i)\\
+          + &... \\
+          + &w_{150}\operatorname{W_{49}}(y_{i}) +
+          w_{151}\operatorname{H_{49}}(y_i) + w_{152}\operatorname{B_{49}}(y_i)
 \end{align}
 
 where $\operatorname{W_k}$, $\operatorname{B_k}$, $\operatorname{H_k}$
@@ -180,33 +181,64 @@ black, or Hispanic. Since every county has a different racial mix, we
 need a set indicator variables for each county. These weights affect
 how we would label a block if we didn't know anything about it's neighbors.
 
-We estimate all the parameters using the PyStruct library. In order to
-evaluate the robustness of the parameters, we bootstrap a sampling
-distribution of the parameters by sampling with replacement from the
-49 counties, estimating the parameters on the sample, recording the
-results, and repeating 1000 times. Using the a percentile bootstrap,
-we to estimate the confidence intervals for the parameters.
+We estimate all the parameters using the PyStruct
+library.\cite{muller_pystruct_2014} In order to evaluate the
+robustness of the parameters, we bootstrap a sampling distribution of
+the parameters by sampling with replacement from the 49 counties,
+estimating the parameters on the sample, recording the results, and
+repeating 1000 times. Using the percentile bootstrap, we estimate the
+confidence intervals for the parameters.
 
 In Table~\ref{tab:parameters}, we have the parameters for racial
-preferences. The values may seem very small, but this is due to the
+preferences.\footnote{If our formalism, which is typical of the
+  literature, the objective is to find the parameters that give the
+  observed data the smallest score. PyStruct attempts to find the
+  parameters the largest score. This makes no real difference except
+  it inverts the signs of the parameters. In order to maintain
+  consistency, I invert the signs of PyStruct's parameters in this
+  presentation} The values may seem very small, but this is due to the
 constraint that $\sqrt{\sum_i^M w_i^2 = 1}$ for the 153
 parameters. The racial preference parameters are between one to three
 orders of magnitude greater than the city specific bias terms.
 
-If a racial or ethnic preference parameter is positive, then blocks of
+If a racial or ethnic preference parameter is negative, then blocks of
 that type should tend to be neighbors, all else equal. If a preference
-parameter is negative, then blocks of that type should tend to not be
+parameter is positive, then blocks of that type should tend to not be
 neighbors. The signs of the parameter align with expectations. Each
 racial and ethnic groups tend to live among their own group. White and
 black blocks, and Hispanic and black groups tend to not to
 neighbor. Interestingly, the parameter for white and Hispanic groups
-is positives, suggesting that white and Hispanic groups should tend to
-neighbor, all else being equal. 
+is negative, suggesting that white and Hispanic groups should tend to
+neighbor, all else being equal. Only the negative parameter for
+``White-White'' and the postive parameter for ``Black-Hispanic'' have
+95\% confidence intervals that do not cover 0.
 
-Only two parameters have 95\% confidence intervals that do not cover
-0. 
+This relatively simple analysis demonstrate how we can estimate
+parameters that Schelling could only posit and how we can use
+observational data to test a model of emergent phenomena that before
+we could only simulate.
 
+\section*{Conclusion}
+The structured support vector machine allows us to subject an
+important class of emergent sociological problems to empirical
+tests. The nature and sources of residential segregation are just one
+instance of a larger class of problems where we are interested how
+network connections effect discrete outcomes. Other examples can
+political party affiliations, music genre preferences, or risk taking
+among groups of acquaintances. Of course, when we move from a spatial
+network to a social network we must take care to understand how an
+outcome could structure the network in addition to how the network
+could influence the behavior.
 
+Within the field of urban sociology, the simple models that I have
+used to introduced the method can be extended in a number of
+ways. They can be used to comprehensively compare the potential
+sources of racial segregation, by adding richer variables to the
+particular block groups like the average rent and commute times. These
+models can also be used to compare the racial preferences between
+city, and provide a measure of racial segregation that is scale
+free. These measures could be both input our outcome measures for
+understanding the causes and effects of racial segregation. 
 
 
 <<bootstrap>>=
@@ -214,7 +246,7 @@ library(RcppCNPy)
 
 load <- function(x) {
     filename = paste0(x, '.npy')
-    npyLoad(filename)
+    npyLoad(filename) * -1 #PyStruct's parameters have opposite signs of those typical in the literature
 }
 
 ww <- load('white-white')
@@ -241,10 +273,21 @@ edge_parameters <- rbind(
 
 colnames(edge_parameters) <- c("Estimate", "2.5%", "97.5%")
       
-xtable(edge_parameters, digits=-2, caption="Racial Preference Parameters, 95% Confidence Intervals (Percentile Bootstrap)",
+xtable(edge_parameters, digits=-2, caption="Racial Preference Parameters, 95\\% Confidence Intervals (Percentile Bootstrap)",
        label="tab:parameters")
+
 @ 
 
+\newpage
+\begingroup \parindent 0pt
+\parskip 2ex
+\def\enotesize{\normalsize}
+\theendnotes
+\endgroup
+
+\newpage
+\bibliographystyle{plainnat}
+\bibliography{race-potts}
 
 
 

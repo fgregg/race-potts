@@ -7,7 +7,7 @@
 \usepackage{endnotes}
 \usepackage{tikz}
 \usepackage{adjustbox}
-\title{Estimating Emergent Phenomena}
+\title{From Macrostructure to Micromotives: Inferring plausible racial preferences from global neighborhood segregation}
 \author{Forest Gregg}
 
 \usetikzlibrary{arrows}
@@ -21,6 +21,20 @@
 
 \begin{document}
 \maketitle
+\begin{abstract}
+With agent based modeling, sociologists have explored how
+  local actions can lead to surprising global structures, like mild
+  racial preferences for neighbors can lead to large-scale racial
+  segregation. We have not, however, had effective tools to go from
+  observed global structures to estimates of local interactions. In
+  this paper, we introduce a strategy for estimating local
+  interactions from large systems of coupled, discrete variables: the
+  structured support vector machine. Then we demonstrate this approach
+  using detailed neighborhood data from the 30 largest U.S. cities to
+  infer local housing choices, and outline a range of other social
+  science applications
+\end{abstract}
+
 
 <<include=FALSE>>=
 library(knitr)
@@ -35,62 +49,92 @@ knit_hooks$set(inline = function(x) {
 })
 @ 
 
-Sociologists know that large scale patterns can emerge from the
-local, mutual influence of individuals. From thought experiments and
-simulations, we can see how racial segregation, flocking behavior, or
-public order on the street could emerge from individuals making
-simple, local adjustments to one another. Yet, while emergentist thinking
-has been attractive to sociologists for a long time, there has been no
-substantial empirical program to develop and test theories of how local
-influence result in global patterns. There are couple of reasons.
+Social scientists believe that many large scale social patterns 
+emerge from individuals making local adjustments to one
+another. Historically, these types of emergence theories have been,
+historically, hard to test quantitatively. The irreducible
+interdependence of outcomes presents technical difficulties that made
+estimation of these types of models practically impossible. With
+increased computing power and advances in statistical method, we now
+have techniques to model coupled outcomes when the outcomes are
+continuous or counts. However, we still have not had a means to
+estimate models of coupled outcomes where the outcomes are discrete.
 
-First, in many social settings, we cannot statistically identify local
-influence. We cannot tell whether Alice jumped off the bridge because
-that's what her friend Bob did. Maybe Alice jumped because Alice and
-Bob are both bridge-jumping enthusiasts and that's why they are
-friends. If we do not have an adequate model of why two people are
-interacting, we cannot distinguish the effects of that interaction
-from unobserved homophily.\cite{shalizi_homophily_2011}
+Fortunately, this has not prevented us from exploring these types of
+models altogether. While we have not been able to estimate local
+effects from observed global patterns, we have been able to explore
+how local effects can shape global patterns, using agent-based
+modeling.
 
-Second, models with coupled, interdependent units are computationally
-harder to estimate than models with independence.  For models with
-interdependent, discrete outcomes, the estimation has been beyond the
-realm of practical computation.
+Within sociology, the most famous example is the emergence model of
+racial segregation, which explains stark, city wide patterns of racial
+segregation as the result of individual households acting on mild
+preferences for same-race neighbors. In his 1971 paper, Thomas
+Schelling introduced a model with black and white agents, endowed them
+with preferences, set rules for when and how each agent could move,
+and ran the simulation forward.\cite{schelling_dynamic_1971} When he
+set the preferences of the agents to even mildly prefer to be
+surrounded by agents of the same color, the black and white agents
+would eventually segregate into distinct neighborhoods. These large
+scale patterns looked quite similar to patterns of actual, racial
+segregation in contemporary American cities.
 
-In this paper, we will focus on this second, technical problem. We
-introduce a method called the structured support vector machine, that
-can estimate large systems of coupled, discrete variables. With this
-method, we will bring observational data to bear the most famous
-formal model of emergent order in urban sociology, the Schelling model
-of segregation.
+Since his pioneering work, researchers have improved substantially on
+his method. In Elizabeth Bruch's exemplary, recent paper on how within
+group income inequality and between inequality can effect racial
+segregation, the preferences of the agents are informed by research
+into individual racial preferences, the agents move over a realistic
+geographic space and not an abstract grid, and she uses the simulation
+to derive specific, suprising associations that should appear in
+aggregate data and which she validates
+empirically.\cite{bruch_how_2014}
 
-\section*{Schelling's Emergent Segregation}
-In his 1971 paper ``Dynamic Models of Segregation'' Thomas Schelling
-showed that complete residential racial segregation could emerge
-through people preferring, even slightly, to live in houses surrounded
-mostly by neighbors of their same race.\cite{schelling_dynamic_1971}
+Agent-based modeling lets researchers explore how local actions could
+lead to global patterns. Ideally, we would also be able to go in the
+opposite direction. We would derive local effects from global patterns
+and test whether those local effects are consistent with theory and
+other evidence. While the typical model sociologists would use to
+estimate the local effects are not tractable, in this paper we
+introduce an estimation technique that can be used---the structured support
+vector machine.
 
-In his model, residential locations were divided into a
-checkerboard. At the beginning, white and black agents are distributed
-randomly across the board. There are more locations than there are
-agents, so there are vacant locations. Agents are discontent if a
-certain percentage of their neighbors or not of the same color. Time
-proceeds in steps.  At every step, all the individuals who were
-discontent at the end of the last step move to the nearest location
-that makes them content.
+\subsection*{Autologistic Regression}
+Using our typical tools, we might model write down a model of how
+local interaction leads to racial segregation like like Equation
+\ref{equation:autolog} (two-race case). This model is called the
+autologistic model and is very similar to the typical problem of
+logistic regression; $y_i$ is the race of the people at the $i$th
+location, and we code one race as 1 and the other as 0.
+\begin{align}
+\log\frac{\Pr(y_i = 1)}{\Pr(y_i = 0)} = w_0 + w_1\sum_{j \in \operatorname{N}(i)}y_j
+\label{equation:autolog}
+\end{align}
+Where $\operatorname{N}(i)$ is a function that returns the indices of
+the neighbors of the $i$th location. 
 
-Schelling ran a series of variations, changing the number of vacancies,
-the number of neighbors that the agent considered relevant, and the
-intensity of color preference. In every variant, after enough time
-steps, the white and black agents are spatially segregated. 
+If we could estimate this model, $w_1$ would measure the strength of
+same-race preferences. From an observed global pattern, we could
+derive a measure of local interaction.
 
-This was a wholly abstract model. Schelling With the tools Schelling
-had, he could not go beyond an extended thought experiment. He had no
-way to test this mechanism against other possible explanations, or
-even whether the model was consistent with observed residential
-segregation in American cities. The necessary techniques for that
-became available in the 2000s with the development of a method called
-structured support vector machines.
+Unfortunately, in the likelihood equation in the likelihood
+(Equation \ref{equation:likelihood}), there is a sum that depends on
+every single residential pattern.\cite{cressie_statistics_1993} If
+there are $M$ locations, there are $2^M$ possible residential patterns. For
+all but the very smallest number of locations, this sum cannot be
+practically computed.
+\begin{align}
+\log(L(\mathbf{y} | w_0,w_1)) = w_0\sum_iy_i +
+\frac{w_1}{2}\sum_{i,j}^\mathcal{N}y_iy_j -
+\sum_{z_i,...,z_D}e^{w_0\sum_ky_k + \frac{w_1}{2}\sum_{k,l}^\mathcal{N}y_ky_l}
+\label{equation:likelihood}
+\end{align}
+Where $\mathcal{N}$ is the set of pairs of indices of neighboring
+blocks and $z_i,...,z_D$ denotes every single possible configuration.  
+
+This enormous sum makes maximum likelihood estimation or Bayesian
+techniques impossible for models with even a moderate number of
+locations. The structured support vector machine lets us solve a very
+similar problem, while avoiding that intractable sum.
 
 \input{theory_and_math.tex}
 
@@ -213,22 +257,22 @@ neighbor, all else being equal. Only the negative parameter for
 ``White-White'' and the postive parameter for ``Black-Hispanic'' have
 95\% confidence intervals that do not cover 0.
 
-This relatively simple analysis demonstrate how we can estimate
-parameters that Schelling could only posit and how we can use
-observational data to test a model of emergent phenomena that before
-we could only simulate.
-
 \section*{Conclusion}
-The structured support vector machine allows us to subject an
-important class of emergent sociological problems to empirical
-tests. The nature and sources of residential segregation are just one
-instance of a larger class of problems where we are interested how
-network connections effect discrete outcomes. Other examples can
-political party affiliations, music genre preferences, or risk taking
-among groups of acquaintances. Of course, when we move from a spatial
-network to a social network we must take care to understand how an
-outcome could structure the network in addition to how the network
-could influence the behavior.
+This relatively simple analysis demonstrate how we can estimate
+parameters that agent-based models have to posit. Instead of moving
+from micromotive to macrostructure, the support vector machine lets us
+go from macrostructure to micromotives.
+
+This machinery allows us to subject an important class of emergent
+sociological problems to empirical tests. The nature and sources of
+residential segregation are just one instance of a larger class of
+problems where we are interested how network connections effect
+discrete outcomes. Other examples can political party affiliations,
+music genre preferences, or risk taking among groups of
+acquaintances. Of course, when we move from a spatial network to a
+social network we must take care to understand how an outcome could
+structure the network in addition to how the network could influence
+the behavior.
 
 Within the field of urban sociology, the simple models that I have
 used to introduced the method can be extended in a number of
@@ -269,12 +313,32 @@ edge_parameters <- rbind(
     "White-Hispanic"=c(edges[3,1], quantile(hw, confidence_end_points)),
     "Black-Black"=c(edges[2,2], quantile(bb, confidence_end_points)),
     "Black-Hispanic"=c(edges[3,2], quantile(hb, confidence_end_points)),
-    "Hispanic-Hispanic"=c(edges[3,3], quantile(hh, confidence_end_points)))
+    "Hispanic-Hispanic"=c(edges[3,3], quantile(hh,confidence_end_points)))
 
-colnames(edge_parameters) <- c("Estimate", "2.5%", "97.5%")
+
+interleave <- function(v1,v2) {
+  ord1 <- 2*(1:length(v1))-1
+  ord2 <- 2*(1:length(v2))
+  c(v1,v2)[order(c(ord1,ord2))]
+}
+
+edge_parameters <- interleave(prettyNum(edge_parameters[,1], digits=2), 
+                              paste0("(", 
+                                     prettyNum(edge_parameters[,2], 
+                                               digits=2), 
+                                     ", ", 
+                                     prettyNum(edge_parameters[,3], 
+                                               digits=2), 
+                                     ")"))
+edge_parameters <- data.frame(names(edge_parameters), edge_parameters)
+colnames(edge_parameters) <- c("", "Racial Compatibility")
+edge_parameters[,2] <- as.character(edge_parameters[,2])
+edge_parameters[1,2] <- paste0(edge_parameters[1,2], "*")
+edge_parameters[9,2] <- paste0(edge_parameters[9,2], "*")
       
-xtable(edge_parameters, digits=-2, caption="Racial Preference Parameters, 95\\% Confidence Intervals (Percentile Bootstrap)",
-       label="tab:parameters")
+print(xtable(edge_parameters, align="llr", caption="Racial Compatibility Parameters\\\\ Numbers in Parenthesis are 95\\% Confidence Intervals (Percentile Bootstrap)\\\\
+* $P\\leq.05$",
+label="tab:parameters"), include.rownames=FALSE)
 
 @ 
 

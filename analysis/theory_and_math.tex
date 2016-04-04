@@ -1,8 +1,9 @@
 \section*{From Racial Preferences to Residential Segregation}
-We now introduce the formal problem of finding an residential
-pattern that is most compatible with the racial preferences of
-individual households. This will give us the formal description of the
-problem that the structured support vector machine solves
+To build towards the structured support vector machine, we now
+introduce the formal problem of finding an residential pattern that is
+most compatible with the racial preferences of individual
+households. This will give us the formal description of the problem
+that the structured support vector machine solves
 
 Let's imagine a very small city consisting of four blocks. Only one household
 lives on each block. In this city lives two white households and two
@@ -120,32 +121,34 @@ Chain Monte Carlo.\footnote{In order to converge on the mode of the
 However, researchers, largely in the field of computer vision, have
 developed methods to quickly find the lowest scoring patterns for
 problems like this. In 1986, Greig, Porteous, and Sehult demonstrated
-that finding the best scoring residential pattern for a two races 
-was equivalent to solving the graph cutting problem of min
-cut.\cite{greig_exact_1989}
+that finding the best scoring residential pattern for a two races was
+equivalent to solving the graph cutting problem of min
+cut.\cite{greig_exact_1989} This problem has a fast solution,
+originally due to Ford and Fulkerson.\footnote{Ford and Fulkerson's
+  original algorithm is not polynomial, but it was quickly improved to
+  solve the problem in polynomial time.\cite{ford_maximal_1956}} In
+the 2000s, these graph cut techniques became popular in the computer
+vision community leading to theoretical clarification and
+methodological extension.\cite{kolmogorov_what_2004}
 
- Since the classic 1956 result of Ford and Fulkerson, we have known
- how to solve the min cut problem swiftly.\footnote{Ford and Fulkerson's
-   original algorithm is not polynomial, but it was quickly improved
-   to solve the problem in polynomial time.\cite{ford_maximal_1956}}
- In the 2000s, these graph cut techniques became popular in the
- computer vision community leading to theoretical
- clarification and methodological extension.\cite{kolmogorov_what_2004}
-
-We now have a set of graph cut techniques that allow us to find, or
-approximately find, the lowest scoring pattern for score functions
-that have the following form.
+From these developments, We now have a set of graph cut techniques
+that allow us to find, or approximately find, the lowest scoring
+pattern for score functions that have the following form.
 
 \begin{align}
 \operatorname{E}(\mathbf{y}) = \sum_{<i
   j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j) + \sum_i^N\epsilon_i{y_i}
 \end{align}
 
+Notice that this equation looks the likelihood equation for the
+autologistic function (Equation~\ref{equation:likelihood}), except
+without the intractable normalizing sum.
+
 \section*{From Segregation to Racial Preferences}
 If we can quickly find a residential pattern that is most compatible
 with given racial preferences, we can also \emph{learn} racial
-preferences from observed patterns of residential segregation. The
-machinery for this is called structured support vector machine. 
+preferences from observed patterns of residential segregation. This
+machinery is the structured support vector machine. 
 
 Say we have the observed residential patterns from $M$ cities and we
 want to estimate racial compatibility scores. Consider a racial
@@ -181,7 +184,7 @@ assignment by the largest possible margin.
 Second, we will also put a constraint on $\mathbf{w}$. A
 mathematically convenient choice is to require that $\sqrt{\sum_i^M w_i^2 = 1}$.
 
-Se can state the problem as 
+We can state the problem as 
 %
 \begin{align*}
 &\argmax_{\mathbf{w}:||\mathbf{w}||=1} \mathbf{\gamma} \\
@@ -214,9 +217,14 @@ problem.
 
 
 \subsection*{Learning Sketch}
-We usually can't directly solve this quadratic program because there
-are so many possible assignments, however we can still find the
-optimal weights through the following procedure.
+To directly solve this quadratic problem, we would need to evaluate
+all the $2^N$ possible patterns. This almost the same problem that
+makes estimating autologistic model untractable, and it makes this
+version of the quadratic problem also untractable.
+
+However, we can find the optimal weights by the following procedure
+that which will only requires us to evaluate only a tiny fraction of
+all possible assignments.
 
 Initialize the weights to some starting value. Create an empty set of
 constraints $\mathcal{S}$. Then, find the neighborhood assignment that

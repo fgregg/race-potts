@@ -7,7 +7,8 @@
 \usepackage{endnotes}
 \usepackage{tikz}
 \usepackage{adjustbox}
-\title{From Macrostructure to Micromotives: Inferring plausible racial preferences from global neighborhood segregation}
+\title{From Macrostructure to Micromotives: From Macrostructure to Micromotives: Regression for discrete outomes with spatial autocorrelation}
+
 \author{Forest Gregg}
 
 \usetikzlibrary{arrows}
@@ -22,17 +23,24 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-With agent based modeling, sociologists have explored how
-  local actions can lead to surprising global structures, like mild
-  racial preferences for neighbors can lead to large-scale racial
-  segregation. We have not, however, had effective tools to go from
-  observed global structures to estimates of local interactions. In
-  this paper, we introduce a strategy for estimating local
-  interactions from large systems of coupled, discrete variables: the
-  structured support vector machine. Then we demonstrate this approach
-  using detailed neighborhood data from the 30 largest U.S. cities to
-  infer local housing choices, and outline a range of other social
-  science applications
+  Racial segregation is one of many important social phenomena where a
+  discrete outcome at one site depends upon the outcomes of
+  neighboring sites. While we have methods to estimate systems where
+  there is spatial auto-correlation when outcomes are continuous or
+  counts, we have not had a method to estimate parameters of large
+  systems of coupled, discrete outcomes in such spatial
+  data. Sociologists have explored such systems through agent-based
+  modeling, and in the case of racial segregation, have uncovered
+  surprising results, such as the fact that racial preferences for
+  neighbors could lead to large-scale racial segregation. However, we
+  have not had a tools to go from observed global structures to
+  estimates of local interactions. In this paper, we introduce a
+  strategy for estimating local interactions from large systems of
+  coupled, discrete variables: the structured support vector
+  machine. Then we demonstrate this approach using detailed
+  neighborhood data from the 30 largest U.S. cities to infer local
+  housing choices, and outline a range of other social science
+  applications
 \end{abstract}
 
 
@@ -49,56 +57,83 @@ knit_hooks$set(inline = function(x) {
 })
 @ 
 
-Social scientists believe that many large scale social patterns 
-emerge from individuals making local adjustments to one
-another. Historically, these types of emergence theories have been,
-historically, hard to test quantitatively. The irreducible
-interdependence of outcomes presents technical difficulties that made
-estimation of these types of models practically impossible. With
-increased computing power and advances in statistical method, we now
-have techniques to model coupled outcomes when the outcomes are
-continuous or counts. However, we still have not had a means to
-estimate models of coupled outcomes where the outcomes are discrete.
+Sociologists are interested in a number of social phenomena that have
+discrete outcomes and where the outcomes of of adjacent
+units are irreducibly interdependent--racial segregation and housing
+choice; peer effects on the taking up of risky behavior within a high
+school friend group; the relation between a social network and taste
+preferences.
 
-Fortunately, this has not prevented us from exploring these types of
-models altogether. While we have not been able to estimate local
-effects from observed global patterns, we have been able to explore
-how local effects can shape global patterns, using agent-based
-modeling.
+There are many, different difficulties in understanding these
+phenomena, but they all share a common hurdle. We have not had an
+effective method to estimate large system with both discrete outcomes
+and interdependence between adjacent units. While we now have methods
+to estimate spatially auto-correlated systems with continuous or count
+outcomes, autocorrelated discrete outcomes are intractable to our the
+classic methods.
 
-Within sociology, the most famous example is the emergence model of
-racial segregation, which explains stark, city wide patterns of racial
-segregation as the result of individual households acting on mild
-preferences for same-race neighbors. In his 1971 paper, Thomas
-Schelling introduced a model with black and white agents, endowed them
-with preferences, set rules for when and how each agent could move,
-and ran the simulation forward.\cite{schelling_dynamic_1971} When he
-set the preferences of the agents to even mildly prefer to be
-surrounded by agents of the same color, the black and white agents
-would eventually segregate into distinct neighborhoods. These large
-scale patterns looked quite similar to patterns of actual, racial
-segregation in contemporary American cities.
+The recent development of a method called the Structured Support
+Vector Machine provides a means address these systems. While this
+method does not provide all the familiar benefits of our common
+statistical tools, we are now able to provide point estimates and
+confidence intervals for wide set of previously inaccessible questions.
 
-Since his pioneering work, researchers have improved substantially on
-his method. In Elizabeth Bruch's exemplary, recent paper on how within
-group income inequality and between inequality can effect racial
-segregation, the preferences of the agents are informed by research
-into individual racial preferences, the agents move over a realistic
-geographic space and not an abstract grid, and she uses the simulation
-to derive specific, suprising associations that should appear in
-aggregate data and which she validates
-empirically.\cite{bruch_how_2014}
-
-Agent-based modeling lets researchers explore how local actions could
-lead to global patterns. Ideally, we would also be able to go in the
-opposite direction. We would derive local effects from global patterns
-and test whether those local effects are consistent with theory and
-other evidence. While the typical model sociologists would use to
-estimate the local effects are not tractable, in this paper we
-introduce an estimation technique that can be used---the structured support
-vector machine.
+In this paper, we introduce this method using as an example the
+classic problem of how city-wide racial segregation can emerge from
+individual households with slight racists preferences for neighbors.
+Before introducing the structured support vector machine, we should
+examine why our classic approaches will not work.
 
 \subsection*{Autologistic Regression}
+Briefly, there are two broad types of explanations for racial
+segregation in American cities. First, different areas have different
+benefits and costs to the people who live there, like average rent,
+commute times, or access to lovely parks. If different racial groups
+differ in either their ability to pay for housing or in their tastes,
+they will tend to sort into different areas. Second, if individuals
+prefer to live near neighbors of the same race or, equivalently, don't
+want to live near neighbors of different races, then large scale
+segregation can emerge, even if there's no difference, beforehand,
+between places or between the wealth or tastes of the racial groups.
+
+In order to compare the power of these two explanations, we might
+want to see which factor explained more of observed residential racial
+segregation in American cities. For the moment, simplifying to a
+black and white world, we would write down a model that
+looked something like Equation \ref
+
+\begin{align}
+  \log\frac{\Pr(y_i = 1)}{\Pr(y_i = 0)} = \beta_0 + \beta_1x_{0i} +
+  \beta_2x_{1i} + ... + \rho_1\sum_{j \in \operatorname{N}(i)}y_j
+\end{align}
+where $y_i$ is the race of the person living at the $i$th site and
+$y_i=1$ if a black person lives the $i$th site, $0$ otherwise. The
+$x$'s are attributes of the $i$th site and together with the $\beta$'s
+affect the log odds of a black person living at the $ith$ site,
+unconditional of neighbors. $\rho$ would be effect of the race of the
+neighbors on the the log odds; $\operatorname{N}(i)$ is a function
+that returns the indices of the neighbors of the $i$th location.
+
+If we could estimate this equation, we would be in a strong position
+to compare the importance of the mechanisms for racial
+segregation. If $\rho$ is a persistent and consequential component of
+the model, that would be strong evidence for racial segregation as a
+continued, emergent phenomena. Of course, the standard difficulties of
+model identification still hold.
+
+Without the last, autospatial component, this would be normal pHowever, this model is not estimable using maximum likelihood or
+Bayesian approaches. 
+
+
+
+
+If we could estimate this for a snapshot of 
+
+Without the last term,  estimating the $\beta$'s is a standard problem of logistic
+regression,With the last term, this a 
+Without 
+  
+
 Using our typical tools, we might model write down a model of how
 local interaction leads to racial segregation like like Equation
 \ref{equation:autolog} (two-race case). This model is called the
@@ -109,8 +144,6 @@ location, and we code one race as 1 and the other as 0.
 \log\frac{\Pr(y_i = 1)}{\Pr(y_i = 0)} = w_0 + w_1\sum_{j \in \operatorname{N}(i)}y_j
 \label{equation:autolog}
 \end{align}
-Where $\operatorname{N}(i)$ is a function that returns the indices of
-the neighbors of the $i$th location. 
 
 If we could estimate this model, $w_1$ would measure the strength of
 same-race preferences. From an observed global pattern, we could
@@ -390,3 +423,56 @@ hist(hh)
 par(mfrow=c(1,1))
 
 @ 
+
+
+
+
+
+Social scientists believe that many large scale social patterns 
+emerge from individuals making local adjustments to one
+another. Historically, these types of emergence theories have been,
+historically, hard to test quantitatively. The irreducible
+interdependence of outcomes presents technical difficulties that made
+estimation of these types of models practically impossible. With
+increased computing power and advances in statistical method, we now
+have techniques to model coupled outcomes when the outcomes are
+continuous or counts. However, we still have not had a means to
+estimate models of coupled outcomes where the outcomes are discrete.
+
+Fortunately, this has not prevented us from exploring these types of
+models altogether. While we have not been able to estimate local
+effects from observed global patterns, we have been able to explore
+how local effects can shape global patterns, using agent-based
+modeling.
+
+Within sociology, the most famous example is the emergence model of
+racial segregation, which explains stark, city wide patterns of racial
+segregation as the result of individual households acting on mild
+preferences for same-race neighbors. In his 1971 paper, Thomas
+Schelling introduced a model with black and white agents, endowed them
+with preferences, set rules for when and how each agent could move,
+and ran the simulation forward.\cite{schelling_dynamic_1971} When he
+set the preferences of the agents to even mildly prefer to be
+surrounded by agents of the same color, the black and white agents
+would eventually segregate into distinct neighborhoods. These large
+scale patterns looked quite similar to patterns of actual, racial
+segregation in contemporary American cities.
+
+Since his pioneering work, researchers have improved substantially on
+his method. In Elizabeth Bruch's exemplary, recent paper on how within
+group income inequality and between inequality can effect racial
+segregation, the preferences of the agents are informed by research
+into individual racial preferences, the agents move over a realistic
+geographic space and not an abstract grid, and she uses the simulation
+to derive specific, suprising associations that should appear in
+aggregate data and which she validates
+empirically.\cite{bruch_how_2014}
+
+Agent-based modeling lets researchers explore how local actions could
+lead to global patterns. Ideally, we would also be able to go in the
+opposite direction. We would derive local effects from global patterns
+and test whether those local effects are consistent with theory and
+other evidence. While the typical model sociologists would use to
+estimate the local effects are not tractable, in this paper we
+introduce an estimation technique that can be used---the structured support
+vector machine.

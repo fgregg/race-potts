@@ -132,59 +132,174 @@ strong evidence for racial segregation as a continued, emergent result
 of individual racism.
 
 \section*{Estimation}
-Our classic methods, whether frequentist or Bayesian, for estimating parameters depend upon being able
-to calculate the likelihood of the data. However, while the spatial
-model looks similar to the logistic regression models, the full data
-likelihood turns out to be intractable. The likelihood depends not
-just on the observed patterns of racial segregation, but every single
-possible pattern of racial segregation.
+Our classic methods, whether frequentist or Bayesian, for estimating
+parameters depend upon being able to calculate the likelihood of the
+data. However, while the spatial model looks similar to the logistic
+regression models, the full data likelihood turns out to be
+intractable. The likelihood depends not just on the observed patterns
+of racial segregation, but every single possible pattern of racial
+segregation.
 
 Let $\mathbf{z}$ be a possible pattern of racial segregation
 and $\zeta$ be the set of all possible patterns.
 
 \begin{align}
-  Z = \sum_{\mathbf{z} \in \zeta} \exp\Big({\sum_i^N(\beta_0_z_i + ... + \beta_dx_dz_i) + \sum_i\sum_{j \in \operatorname{N}(i)}\rho z_iz_j}\Big)
+  Z = \sum_{\mathbf{z} \in \zeta} \exp\Big({\sum_i^N(\beta_0z_i + ... + \beta_dx_dz_i) + \rho\sum_i\sum_{j \in \operatorname{N}(i)}z_iz_j}\Big)
 \end{align}
 and the full data log likelihood of an observed pattern of racial
 segregation, $\mathbf{y}$, is 
 
 \begin{align}
-  \log\Pr(\mathbf{y}) = - \log Z + &\sum_i^M(\beta_0_y_i + \beta_1x_{0i}y_i +
-  ... + \beta_dx_dy_i) + \sum_i\sum_{j \in \operatorname{N}(i)}\rho
-  y_i,y_j
+  \log\Pr(\mathbf{\beta}, \rho \mid \mathbf{y}) = (\sum_i^M(\beta_0y_i  +
+  ... + \beta_dx_dy_i) + \rho\sum_i\sum_{j \in \operatorname{N}(i)}
+  y_i,y_j)- Z
 \end{align}
-where
-\clearpage
 
+For two race and $N$ sites there are $2^N$ possible patterns in
+$\zeta$. So, with just 30 sites, the calculating the require takes
+over a billion arithmetic operations. For all but the smallest data
+sets, calculating the likelihood is computationally intractable.
 
+If we cannot calculate the likelihood, we cannot maximize the
+likelihood to estimate parameters. There have been two main responses
+to this computational barrier, pseudolikelihood, MCMC approxmiation,
+and simulation.
 
-
+\subsection*{Psuedolikelihood}
+Originally proposed by Besag, the pseudolikelihood is
 
 \begin{align}
-  \log\frac{\Pr(\mathbf{y})} = \sum_i^N\beta_0y_i + \beta_1x_{0i}y_i +
-  \beta_2x_{1i}y_i + ... + \rho\sum_{j \in \operatorname{N}(i)}y_j
+  p(\boldsymbol{\theta} \mid \mathbf{y}) = \prod_i^N\Pr(y_i \mid \{y_j : j \neq i\})
 \end{align}
 
+This is effectively the 
+so for our model, the log pseudolikelihood is
 
-
-Without the last, spatial
-component, this would be normal problem of logistic
-regression. However, the spatial auto-correlation turns this into a
-problem that we can not estimate using classic maximum likelihood or
-Bayesian approaches.
-
-This is easier to see with a simpler model, where the only site
-specific factor for whether a black person lives at the $i$th site is
-the race of the neigbors (Equation \ref{equation:autolog}).
 \begin{align}
-\log\frac{\Pr(y_i = 1 \mid y_j : j \neq i)}{\Pr(y_i = 0 \mid y_j : j \neq i)} = b_0 + \rho\sum_{j \in \operatorname{N}(i)}y_j
-\label{equation:autolog}
+  \log p(\boldsymbol{\beta}, \rho \mid \mathbf{y}) = &\sum_i^M(\beta_0y_i +
+  ... + \beta_dx_{di}y_i) + \rho\sum_i\sum_{j \in \operatorname{N}(i)}
+  y_i,y_j\\&- \sum_i^M\log(1 + e^{\beta_0 +
+  ... + \beta_dx_{id} + \rho\sum_{j \in \operatorname{N}(i)}y_j})
 \end{align}
+
+Like the maximum likelihood estimate, the maximum pseudolikelihood
+estimate is a consistent estimator. That is, as the, the number of
+sites $M$ goes to infinity the maximum pseudolikelihood parameter
+estimates $\hat{\boldsymbol{\theta}}$ converges to the true parameter
+$\boldsymbol{\theta}$. This convergence is slower than the maximum
+likelihood estimator, and the loss of efficiency increases with the
+strength of the interdependence between sites\cite{Cresside 488}. The
+bias of the estimator has not been fully characterized \cite{erg}.
+
+Social scientists have used psuedolikelihood methods to study a
+problem that looks like the near opposite of the problem of racial
+segregation. Given an observed social network of nodes and edges, can
+we estimate the parameters that determine the likelihood that two
+nodes will share an edge. In the problem of racial segregation, we
+want to know how the races of the neighbors of site $i$ will affect
+the race of the household at site $i$. In this social network problem,
+the task is to estimate how the attributes of nodes $j$ and $k$ will
+make it more likely that they will be ``neighbors'', i.e. share a tie.
+
+Ultimately, the problem can take the same mathematical form if the
+likelihood that node $j$ and $k$ are connected depends upon the number
+of other ties that both $j$ and $k$ have. Let $y_{ij}$ take a value of
+$1$ if there is a tie between node $i$ and node $j$ and $0$ otherwise,
+then we could express this interdependency as follows
+
+\begin{align}
+  \log\frac{\Pr(y_{ij} = 1 \mid \{y_{kl} : k \neq i\ \text{and } l \neq
+    j\})}{\Pr(y_{ij} = 0 \mid \{y_{kl} : k \neq i\ \text{and } l \neq j\})} =
+  \beta_0 + \beta_1x_{0ij} + ... + \beta_dx_{dij} + \rho(\sum_{l \neq
+    j}y_{il} + \sum_{k \neq i}y_{kj})
+\end{align}
+
+However, even with pseudolikelihood
+approach, the 
+
+
+
+
+
+
+is close to the inverse of the problem of racial
+segregation: given a set of nodes with attributes, what is the
+probability that there will be an edge between those nodes.
+networks\cite{strauss,ikeda,frank,wasserman pattison,wasserman
+  robbins,van Dujin}
+
+\subsection*{MCMC Estimate of the Maximum Likelihood Estimate}
+Using Markov Chain Monte Carlo methods, it is possible to approximate
+the likelihood and estimate the maximum likelihood estimate of
+$\boldsymbol{\theta}$. While there has been good progress in refining
+  MCMC methods for estimating these types of models \cite{geyer, moller,
+    hughes}, the immense number of possible patterns make MCMC methods
+  intractable for data with more than a thousand sites.
+
+As Hughe and his coauthors point out, while MCMC methods become
+intractable as the number of sites increase, a large number of sites
+should increase our confidence in the pseudolikelihood estimator. In a
+simulation study, Hughes et.al found that accurate estimation was not
+possible with less than 900 site, regardless of the method, but that
+at above this size that the pseudolikelihood estimator performed as
+well as the MCMC maximum likelihood estimator.
+
+\subsection*{Simulation}
+Social scientists have largely 
+
+Social scientists believe that many large scale social patterns 
+emerge from individuals making local adjustments to one
+another. Historically, these types of emergence theories have been,
+historically, hard to test quantitatively. The irreducible
+interdependence of outcomes presents technical difficulties that made
+estimation of these types of models practically impossible. With
+increased computing power and advances in statistical method, we now
+have techniques to model coupled outcomes when the outcomes are
+continuous or counts. However, we still have not had a means to
+estimate models of coupled outcomes where the outcomes are discrete.
+
+Fortunately, this has not prevented us from exploring these types of
+models altogether. While we have not been able to estimate local
+effects from observed global patterns, we have been able to explore
+how local effects can shape global patterns, using agent-based
+modeling.
+
+Within sociology, the most famous example is the emergence model of
+racial segregation, which explains stark, city wide patterns of racial
+segregation as the result of individual households acting on mild
+preferences for same-race neighbors. In his 1971 paper, Thomas
+Schelling introduced a model with black and white agents, endowed them
+with preferences, set rules for when and how each agent could move,
+and ran the simulation forward.\cite{schelling_dynamic_1971} When he
+set the preferences of the agents to even mildly prefer to be
+surrounded by agents of the same color, the black and white agents
+would eventually segregate into distinct neighborhoods. These large
+scale patterns looked quite similar to patterns of actual, racial
+segregation in contemporary American cities.
+
+Since his pioneering work, researchers have improved substantially on
+his method. In Elizabeth Bruch's exemplary, recent paper on how within
+group income inequality and between inequality can effect racial
+segregation, the preferences of the agents are informed by research
+into individual racial preferences, the agents move over a realistic
+geographic space and not an abstract grid, and she uses the simulation
+to derive specific, suprising associations that should appear in
+aggregate data and which she validates
+empirically.\cite{bruch_how_2014}
+
+Agent-based modeling lets researchers explore how local actions could
+lead to global patterns. Ideally, we would also be able to go in the
+opposite direction. We would derive local effects from global patterns
+and test whether those local effects are consistent with theory and
+other evidence. While the typical model sociologists would use to
+estimate the local effects are not tractable, in this paper we
+introduce an estimation technique that can be used---the structured support
+vector machine.
+
 
 The full data likelihood for this model, has normalizing constant that
 depends upon every possible way that blacks and whites could live on
 the i sites.
-
 
 In, the likelihood equation for this model of this model (Equation
 \ref{equation:likelihood}), there is a sum that depends on every
@@ -467,51 +582,3 @@ par(mfrow=c(1,1))
 
 
 
-Social scientists believe that many large scale social patterns 
-emerge from individuals making local adjustments to one
-another. Historically, these types of emergence theories have been,
-historically, hard to test quantitatively. The irreducible
-interdependence of outcomes presents technical difficulties that made
-estimation of these types of models practically impossible. With
-increased computing power and advances in statistical method, we now
-have techniques to model coupled outcomes when the outcomes are
-continuous or counts. However, we still have not had a means to
-estimate models of coupled outcomes where the outcomes are discrete.
-
-Fortunately, this has not prevented us from exploring these types of
-models altogether. While we have not been able to estimate local
-effects from observed global patterns, we have been able to explore
-how local effects can shape global patterns, using agent-based
-modeling.
-
-Within sociology, the most famous example is the emergence model of
-racial segregation, which explains stark, city wide patterns of racial
-segregation as the result of individual households acting on mild
-preferences for same-race neighbors. In his 1971 paper, Thomas
-Schelling introduced a model with black and white agents, endowed them
-with preferences, set rules for when and how each agent could move,
-and ran the simulation forward.\cite{schelling_dynamic_1971} When he
-set the preferences of the agents to even mildly prefer to be
-surrounded by agents of the same color, the black and white agents
-would eventually segregate into distinct neighborhoods. These large
-scale patterns looked quite similar to patterns of actual, racial
-segregation in contemporary American cities.
-
-Since his pioneering work, researchers have improved substantially on
-his method. In Elizabeth Bruch's exemplary, recent paper on how within
-group income inequality and between inequality can effect racial
-segregation, the preferences of the agents are informed by research
-into individual racial preferences, the agents move over a realistic
-geographic space and not an abstract grid, and she uses the simulation
-to derive specific, suprising associations that should appear in
-aggregate data and which she validates
-empirically.\cite{bruch_how_2014}
-
-Agent-based modeling lets researchers explore how local actions could
-lead to global patterns. Ideally, we would also be able to go in the
-opposite direction. We would derive local effects from global patterns
-and test whether those local effects are consistent with theory and
-other evidence. While the typical model sociologists would use to
-estimate the local effects are not tractable, in this paper we
-introduce an estimation technique that can be used---the structured support
-vector machine.

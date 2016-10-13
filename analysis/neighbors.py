@@ -1,19 +1,17 @@
 import pysal
 from pysal.weights.Contiguity import buildContiguity
-from pystruct.models import GraphCRF
-import pystruct.learners as ssvm
+from pseudolikelihood.centered_potts import CenteredPotts, rpotts, to_adjacency
 import numpy
 import datetime
 import time
 
 def example(base_name, data_path) :
-    shapes = pysal.open(data_path + base_name + '_county_race.shp','r')
-    dbf = pysal.open(data_path + base_name + '_county_race.dbf', 'r')
+    shapes = pysal.open(data_path + base_name + '.shp','r')
+    dbf = pysal.open(data_path + base_name + '.dbf', 'r')
 
     # no features
-    labels = numpy.fromiter(raceLabelGen(dbf), 
-                            dtype='int32')
-    
+    labels = numpy.vstack(list(raceLabelGen(dbf)))
+ 
     features = numpy.ones((len(labels), 1), dtype='float')
     edgelist = edgeList(shapes)
 
@@ -21,11 +19,14 @@ def example(base_name, data_path) :
 
 
 def raceLabelGen(dbf) :
+    white_index = dbf.header.index('P0050003')
+    black_index = dbf.header.index('P0050004')
+    hispanic_index = dbf.header.index('P0040003')
     for row in dbf :
-        _, _, white, black, hispanic = row
-        races = (white, black, hispanic)
-        yield numpy.argmax(races)
-
+        races = (row[white_index], row[black_index], row[hispanic_index])
+        races = numpy.array([int(race) for race in races])
+        yield races
+        #yield numpy.argmax(races)
 
 def edgeList(shapes) :
     w = buildContiguity(shapes)
@@ -50,49 +51,21 @@ def trainingData(base_names, data_path) :
         features, edgelist = x
         n_nodes = features.shape[0]
         features = city_indicator.copy()
-        features[i] = 1
+        features[i] = 0
         features = numpy.tile(features, (n_nodes, 1))
         X.append((features, edgelist))
         Y.append(y)
 
     return X, Y
 
-def train(clf, X, Y) :
 
-    clf.fit(X, Y)
-
-    weights = clf.w
-
-    return weights
-
-def extractWeights(crf, weights) :
-    unary_weights = crf.n_states * crf.n_features
-    unary = weights[:unary_weights]
-    unary = unary.reshape(crf.n_states, crf.n_features)
-
-    edges = numpy.zeros((crf.n_states, crf.n_states))
-    edges[numpy.tril_indices(crf.n_states)] = weights[unary_weights:]
-
-    return unary, edges
-
-
-def printParameters(unary, edges, selector, clf, results_file) :
-    with open(results_file, 'ab') as f :
-        f.write('==============================\n')
-        f.write(str(datetime.datetime.now())+'\n')
-        f.write("Counties\n")
-        f.write(str(selector)+'\n')
-        f.write("C\n")
-        f.write(str(clf.get_params()['C'])+'\n')
-        f.write("Unary\n")
-        f.write(str(unary)+'\n')
-        f.write("Edge\n")
-        f.write(str(edges)+'\n')
 
 
 if __name__ == '__main__' :
     import itertools
     import os
+
+    from pysal.contrib.viz import mapping
 
     data_path = '../data/'
     iterations = 1000
@@ -103,55 +76,33 @@ if __name__ == '__main__' :
 
     sample_size = len(base_names)
 
-    X, Y = trainingData(base_names, data_path)
+    #base_name = base_names[3]
+    base_name = 'chicago'
 
-    crf = GraphCRF(n_states=3, n_features=sample_size)
-    clf = ssvm.NSlackSSVM(model=crf, C=0.0, 
-                          tol=.1)
+    X, Y = trainingData([base_name], data_path)
+    features, edges = X[0]
+    A = to_adjacency(edges)
 
-    weights = train(clf, X, Y)
-    unary, edge = extractWeights(crf, weights)
+    potts = CenteredPotts(C=1)
+    print(A.sum(axis=1).mean())
 
-    printParameters(unary, edge, base_names, clf, 'param.txt')
-    numpy.save('edge_param', edge)
+    potts.fit((features, A), Y[0])
+    print(potts.coef_)
+    print(potts.intercept_)
 
-    unaries = numpy.empty((iterations, 3, sample_size))
-    edges = numpy.empty((iterations, 3, 3))
-
-    average_time = 0
-    for i in xrange(1, iterations+1) :
-
-        start_time = time.time()
-
-        selector = numpy.random.choice(sample_size, sample_size)
-
-        resampled_X = [X[j] for j in selector]
-        resampled_Y = [Y[j] for j in selector]
-
-        weights = train(clf, resampled_X, resampled_Y)
-        unary, edge = extractWeights(crf, weights)
-
-        printParameters(unary, edge, selector, clf, 'bootstrap.txt')
-
-        unaries[i-1, ...] = unary
-        edges[i-1, ...] = edge
-
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        
-        average_time += (elapsed_time - average_time)/float(i)
-
-        hours_left = (average_time * (iterations - i))/float(60 * 60)
-        print str(hours_left) + ' hours left'
-        
-
-    numpy.save('unaries1.npy', unaries)
-    numpy.save('edges1.py', edges)
-
-    race = {i : race for i, race in enumerate(['white', 'black', 'hispanic'])}
-
-    for j, i in itertools.combinations_with_replacement(race.keys(), 2) :
-        file_name = '%s-%s' % (race[i], race[j])
-        numpy.save(file_name, edges[..., i, j])
+    print('len', len(Y[0]))
+    print('0', (Y[0]==0).sum())
+    print('1', (Y[0]==1).sum())
+    print('2', (Y[0]==2).sum())
+    print(Y[0])
+    sample = rpotts((features, A), potts)
+    print(sample.T)
+    print((sample==0).sum())
+    print((sample==1).sum())
+    print((sample==2).sum())
 
 
+    city_shp = '../data/chicago.shp'
+    mapping.plot_choropleth(city_shp, Y[0], 'unique_values')
+    mapping.plot_choropleth(city_shp, sample.T[0], 'unique_values')
+    

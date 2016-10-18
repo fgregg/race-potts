@@ -1,6 +1,7 @@
 import pysal
 from pysal.weights.Contiguity import buildContiguity
 from pseudolikelihood.centered_potts import CenteredPotts, rpotts, to_adjacency
+from pseudolikelihood.mcmc import rmultinomial
 import numpy
 import datetime
 import time
@@ -25,6 +26,9 @@ def raceLabelGen(dbf) :
     for row in dbf :
         races = (row[white_index], row[black_index], row[hispanic_index])
         races = numpy.array([int(race) for race in races])
+        if sum(races) == 0:
+            import pdb
+            pdb.set_trace()
         yield races
         #yield numpy.argmax(races)
 
@@ -77,9 +81,11 @@ if __name__ == '__main__' :
     sample_size = len(base_names)
 
     #base_name = base_names[3]
-    base_name = 'chicago'
+    base_name = 'chicago_pop'
 
     X, Y = trainingData([base_name], data_path)
+    n_observations = Y[0].sum(axis=1)[:, numpy.newaxis]
+
     features, edges = X[0]
     A = to_adjacency(edges)
 
@@ -91,18 +97,17 @@ if __name__ == '__main__' :
     print(potts.intercept_)
 
     print('len', len(Y[0]))
-    print('0', (Y[0]==0).sum())
-    print('1', (Y[0]==1).sum())
-    print('2', (Y[0]==2).sum())
+    print(Y[0].sum(axis=0))
     print(Y[0])
-    sample = rpotts((features, A), potts)
-    print(sample.T)
-    print((sample==0).sum())
-    print((sample==1).sum())
-    print((sample==2).sum())
+    sample = rmultinomial((features, A), n_observations, potts)
+    print(len(sample))
+    import pdb
+    pdb.set_trace()
+    print(sample)
+    print(sample.sum(axis=0))
 
 
-    city_shp = '../data/chicago.shp'
-    mapping.plot_choropleth(city_shp, Y[0], 'unique_values')
-    mapping.plot_choropleth(city_shp, sample.T[0], 'unique_values')
+    city_shp = '../data/chicago_pop.shp'
+    mapping.plot_choropleth(city_shp, Y[0].argmax(axis=1), 'unique_values')
+    mapping.plot_choropleth(city_shp, sample.argmax(axis=1), 'unique_values')
     

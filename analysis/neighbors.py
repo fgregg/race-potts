@@ -24,7 +24,7 @@ def raceLabelGen(dbf) :
     black_index = dbf.header.index('P0050004')
     hispanic_index = dbf.header.index('P0040003')
     for row in dbf :
-        races = (row[white_index], row[hispanic_index], row[black_index])
+        races = (row[black_index], row[hispanic_index], row[white_index])
         races = numpy.array([int(race) for race in races])
         if sum(races) == 0:
             import pdb
@@ -97,7 +97,6 @@ if __name__ == '__main__' :
 
     print(Y[0])
     print(Y[0].sum(axis=0))
-    n_observations[:] = 100
     sample = rmultinomial((features, A), n_observations, potts)
     print(sample)
     print(sample.sum(axis=0))

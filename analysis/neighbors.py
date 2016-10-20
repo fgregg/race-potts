@@ -24,8 +24,9 @@ def raceLabelGen(dbf) :
     black_index = dbf.header.index('P0050004')
     hispanic_index = dbf.header.index('P0040003')
     for row in dbf :
-        races = (row[black_index], row[hispanic_index], row[white_index])
-        races = numpy.array([int(race) for race in races])
+        races = (int(row[hispanic_index]), int(row[black_index]), int(row[white_index]))
+        races = numpy.array(races)
+        
         if sum(races) == 0:
             import pdb
             pdb.set_trace()
@@ -89,7 +90,7 @@ if __name__ == '__main__' :
     features, edges = X[0]
     A = to_adjacency(edges)
 
-    potts = CenteredPotts(C=1)
+    potts = CenteredPotts(C=float('inf'))
 
     potts.fit((features, A), Y[0])
     print(potts.coef_)

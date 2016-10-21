@@ -13,14 +13,13 @@ place_name = sys.argv[2]
 
 c = Census(CENSUS_API_KEY)
 
-white_pop = 'P0050003'
-black_pop = 'P0050004'
-hispanic_pop = 'P0040003'
+fields = dict(hispanic_pop = 'B03002_012E',
+              white_pop = 'B03002_003E',
+              black_pop = 'B03002_004E',
+              median_monthly_rent = 'B25105_001E')
 
-fields = (white_pop, black_pop, hispanic_pop)
-
-place_geojson = c.state_place_block(fields, state_fips, place_name,
-                                    return_geometry=True)
+place_geojson = c.state_place_blockgroup(tuple(fields.values()), state_fips, place_name,
+                                         return_geometry=True)
 
 json.dump(place_geojson, sys.stdout)
 

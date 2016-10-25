@@ -57,6 +57,60 @@ knit_hooks$set(inline = function(x) {
 })
 @ 
 
+<<blockgroups-intercept, results='asis'>>=
+tract_params <- read.csv('params_blockgroups.csv', header=FALSE)
+names(tract_params) <- c('City',
+                         'Int., Black', 'Median Housing Cost, Black', 
+                         'B-H', 'B-W',
+                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
+                         'H-B', 'H-W')
+
+no_x <- tract_params[, c('City',
+                         'Int., Black', 
+                         'B-H', 'B-W',
+                         'Int., Hispanic', 
+                         'H-B', 'H-W')]
+xtable(no_x[order(no_x$"B-W"),],
+       caption="Block Groups, No Housing Costs")
+@
+
+
+<<tracts-intercept, results='asis'>>=
+tract_params <- read.csv('params_tracts.csv', header=FALSE)
+names(tract_params) <- c('City',
+                         'Int., Black', 'Median Housing Cost, Black', 
+                         'B-H', 'B-W',
+                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
+                         'H-B', 'H-W')
+
+no_x <- tract_params[tract_params['Median Housing Cost, Black'] == 0, 
+                     c('City',
+                       'Int., Black', 
+                       'B-H', 'B-W',
+                       'Int., Hispanic', 
+                       'H-B', 'H-W')]
+xtable(no_x[order(no_x$"B-W"),],
+       caption="Tracts, No Housing Costs")
+@
+
+<<tracts-x, results='asis'>>=
+tract_params <- read.csv('params_tracts.csv', header=FALSE)
+names(tract_params) <- c('City',
+                         'Int., Black', 'Median Housing Cost, Black', 
+                         'B-H', 'B-W',
+                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
+                         'H-B', 'H-W')
+
+with_x <- tract_params[tract_params['Median Housing Cost, Black'] != 0, 
+                     c('City',
+                       'Int., Black', 
+                       'B-H', 'B-W',
+                       'Int., Hispanic', 
+                       'H-B', 'H-W')]
+xtable(with_x[order(with_x$"B-W"),],
+       caption = 'Tracts, Controlling for Median Housing Costs')
+@ 
+
 Sociologists are interested in a number of social phenomena that have
 discrete outcomes and where the outcomes of of adjacent
 units are irreducibly interdependent--racial segregation and housing
@@ -523,8 +577,7 @@ edge_parameters[,2] <- as.character(edge_parameters[,2])
 edge_parameters[1,2] <- paste0(edge_parameters[1,2], "*")
 edge_parameters[9,2] <- paste0(edge_parameters[9,2], "*")
       
-print(xtable(edge_parameters, align="llr", caption="Racial Compatibility Parameters\\\\ Numbers in Parenthesis are 95\\% Confidence Intervals (Percentile Bootstrap)\\\\
-* $P\\leq.05$",
+print(xtable(edge_parameters, align="llr", #caption="Racial Compatibility Parameters\\\\ Numbers in Parenthesis are 95\\% Confidence Intervals (Percentile Bootstrap)\\\\* $P\\leq.05$",
 label="tab:parameters"), include.rownames=FALSE)
 
 @ 

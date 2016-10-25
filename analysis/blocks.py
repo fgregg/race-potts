@@ -3,8 +3,6 @@ from pysal.weights.Contiguity import buildContiguity
 from pseudolikelihood.centered_potts import CenteredPotts, rpotts, to_adjacency
 from pseudolikelihood.mcmc import rmultinomial
 import numpy
-import datetime
-import time
 
 def example(base_name, data_path) :
     shapes = pysal.open(data_path + base_name + '.shp','r')
@@ -22,7 +20,7 @@ def raceLabelGen(dbf) :
     black_index = dbf.header.index('P0050004')
     hispanic_index = dbf.header.index('P0040003')
     for row in dbf :
-        races = (int(row[white_index]), int(row[hispanic_index]), int(row[black_index]))
+        races = (int(row[black_index]), int(row[hispanic_index]), int(row[white_index]))
         races = numpy.array(races)
         
         yield races
@@ -66,11 +64,13 @@ if __name__ == '__main__' :
     writer = csv.writer(sys.stdout)
     
     data_path = '../data/'
-    places = [name.split('.shp')[0] for name in os.listdir(data_path) 
-              if name.endswith('.shp')]
+    file_names = [name.split('.shp')[0] for name in os.listdir(data_path) 
+                 if name.endswith('_blocks.shp')]
 
-    X, Y = trainingData(places, data_path)
-    for place, x, y in zip(places, X, Y):
+    X, Y = trainingData(file_names, data_path)
+    for file_name, x, y in zip(file_names, X, Y):
+        place = file_name.rsplit('_', 1)[0]
+        
         features, edges = x
         A = to_adjacency(edges)
 

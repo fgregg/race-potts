@@ -29,12 +29,41 @@ nashville = 47 52006 # Nashville-Davidson metropolitan government (balance)
 %_tracts.geojson :
 	python3 tracts.py $($*) > $@
 
-%_blockgroups.geojson :
-	python3 blockgroups.py $($*) > $@
+%_2014_blockgroups.geojson :
+	python3 blockgroups.py $($*) 2014 > $@
+
+%_2011_blockgroups.geojson :
+	python3 blockgroups.py $($*) 2011 > $@
+
+%_blocks.geojson :
+	python3 blocks.py $($*) > $@
+
+%_tracts.shp : %_tracts.geojson
+	ogr2ogr $@ $< -where "(\"B03002_012E\" != '0' OR \
+                               \"B03002_003E\" != '0' OR \
+                               \"B03002_004E\" != '0') AND \
+                               \"B25105_001E\" IS NOT NULL"
+
+%_blockgroups.shp : %_blockgroups.geojson
+	ogr2ogr $@ $< -where "(\"B03002_012E\" != '0' OR \
+                               \"B03002_003E\" != '0' OR \
+                               \"B03002_004E\" != '0')"
+
+%_blocks.shp : %_blocks.geojson
+	ogr2ogr $@ $< -where "(\"P0050003\" != '0' OR \
+                               \"P0050004\" != '0' OR \
+                               \"P0040003\" != '0')"
 
 
-%.shp : %.geojson
-	ogr2ogr $@ $< -where "\"B03002_012E\" != '0' OR \"B03002_003E\" != '0' OR \"B03002_004E\" != '0'"
+.PHONY : 2014_blockgroups
+2014_blockgroups : nyc_2014_blockgroups.shp la_2014_blockgroups.shp chicago_2014_blockgroups.shp houston_2014_blockgroups.shp philadelphia_2014_blockgroups.shp phoenix_2014_blockgroups.shp san_antonio_2014_blockgroups.shp san_diego_2014_blockgroups.shp dallas_2014_blockgroups.shp san_jose_2014_blockgroups.shp austin_2014_blockgroups.shp jacksonville_2014_blockgroups.shp san_francisco_2014_blockgroups.shp indianapolis_2014_blockgroups.shp columbus_2014_blockgroups.shp fort_worth_2014_blockgroups.shp charlotte_2014_blockgroups.shp seattle_2014_blockgroups.shp denver_2014_blockgroups.shp el_paso_2014_blockgroups.shp detroit_2014_blockgroups.shp dc_2014_blockgroups.shp boston_2014_blockgroups.shp memphis_2014_blockgroups.shp nashville_2014_blockgroups.shp
+
+.PHONY 2011_blockgroups
+2011_blockgroups : nyc_2011_blockgroups.shp la_2011_blockgroups.shp chicago_2011_blockgroups.shp houston_2011_blockgroups.shp philadelphia_2011_blockgroups.shp phoenix_2011_blockgroups.shp san_antonio_2011_blockgroups.shp san_diego_2011_blockgroups.shp dallas_2011_blockgroups.shp san_jose_2011_blockgroups.shp austin_2011_blockgroups.shp jacksonville_2011_blockgroups.shp san_francisco_2011_blockgroups.shp indianapolis_2011_blockgroups.shp columbus_2011_blockgroups.shp fort_worth_2011_blockgroups.shp charlotte_2011_blockgroups.shp seattle_2011_blockgroups.shp denver_2011_blockgroups.shp el_paso_2011_blockgroups.shp detroit_2011_blockgroups.shp dc_2011_blockgroups.shp boston_2011_blockgroups.shp memphis_2011_blockgroups.shp nashville_2011_blockgroups.shp
 
 
-all :nyc_tracts.shp la_tracts.shp chicago_tracts.shp houston_tracts.shp philadelphia_tracts.shp phoenix_tracts.shp san_antonio_tracts.shp san_diego_tracts.shp dallas_tracts.shp san_jose_tracts.shp austin_tracts.shp jacksonville_tracts.shp san_francisco_tracts.shp indianapolis_tracts.shp columbus_tracts.shp fort_worth_tracts.shp charlotte_tracts.shp seattle_tracts.shp denver_tracts.shp el_paso_tracts.shp detroit_tracts.shp dc_tracts.shp boston_tracts.shp memphis_tracts.shp nashville_tracts.shp nyc_blockgroups.shp la_blockgroups.shp chicago_blockgroups.shp houston_blockgroups.shp philadelphia_blockgroups.shp phoenix_blockgroups.shp san_antonio_blockgroups.shp san_diego_blockgroups.shp dallas_blockgroups.shp san_jose_blockgroups.shp austin_blockgroups.shp jacksonville_blockgroups.shp san_francisco_blockgroups.shp indianapolis_blockgroups.shp columbus_blockgroups.shp fort_worth_blockgroups.shp charlotte_blockgroups.shp seattle_blockgroups.shp denver_blockgroups.shp el_paso_blockgroups.shp detroit_blockgroups.shp dc_blockgroups.shp boston_blockgroups.shp memphis_blockgroups.shp nashville_blockgroups.shp
+.PHONY : blocks
+blocks : nyc_blocks.shp la_blocks.shp chicago_blocks.shp houston_blocks.shp philadelphia_blocks.shp phoenix_blocks.shp san_antonio_blocks.shp san_diego_blocks.shp dallas_blocks.shp san_jose_blocks.shp austin_blocks.shp jacksonville_blocks.shp san_francisco_blocks.shp indianapolis_blocks.shp columbus_blocks.shp fort_worth_blocks.shp charlotte_blocks.shp seattle_blocks.shp denver_blocks.shp el_paso_blocks.shp detroit_blocks.shp dc_blocks.shp boston_blocks.shp memphis_blocks.shp nashville_blocks.shp
+
+
+all : 2014_blockgroups 2011_blockgroups blocks

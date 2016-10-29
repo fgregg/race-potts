@@ -57,9 +57,9 @@ knit_hooks$set(inline = function(x) {
 })
 @ 
 
-<<blockgroups-intercept, results='asis'>>=
-tract_params <- read.csv('params_blockgroups.csv', header=FALSE)
-names(tract_params) <- c('City',
+<<blocks-intercept, results='asis', cache=FALSE>>=
+tract_params <- read.csv('params_blocks.csv', header=FALSE)
+names(tract_params) <- c('City', 'N', 'Average Neighbors',
                          'Int., Black', 'Median Housing Cost, Black', 
                          'B-H', 'B-W',
                          'Int., Hispanic', 'Median Housing Cost, Hispanic', 
@@ -71,7 +71,24 @@ no_x <- tract_params[, c('City',
                          'Int., Hispanic', 
                          'H-B', 'H-W')]
 xtable(no_x[order(no_x$"B-W"),],
-       caption="Block Groups, No Housing Costs")
+       caption="2010 Blocks, No Housing Costs")
+@
+
+<<blockgroups-intercept, results='asis', cache=FALSE>>=
+tract_params <- read.csv('params_blockgroups_2010.csv', header=FALSE)
+names(tract_params) <- c('City', 'N', 'Average Neighbors',
+                         'Int., Black', 'Median Housing Cost, Black', 
+                         'B-H', 'B-W',
+                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
+                         'H-B', 'H-W')
+
+no_x <- tract_params[, c('City',
+                         'Int., Black', 
+                         'B-H', 'B-W',
+                         'Int., Hispanic', 
+                         'H-B', 'H-W')]
+xtable(no_x[order(no_x$"B-W"),],
+       caption="2010 Block Groups, No Housing Costs")
 @
 
 

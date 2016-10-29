@@ -1,4 +1,10 @@
-include config.mk
+MAKEFLAGS += --warn-undefined-variables
+.DEFAULT_GOAL := all
+.DELETE_ON_ERROR:
+.SUFFIXES:
+
+PG_DB = race_potts
+CHECK_RELATION = psql -d $(PG_DB) -c "\d $@" > /dev/null 2>&1
 
 nyc = 36 51000
 la = 06 44000
@@ -26,11 +32,11 @@ boston = 25 07000
 memphis = 47 48000
 nashville = 47 52006 # Nashville-Davidson metropolitan government (balance)
 
-%_tracts.geojson :
-	python3 tracts.py $($*) > $@
+.PRECIOUS : %_blocks.geojson %_2011_blockgroups.geojson
 
-%_2014_blockgroups.geojson :
-	python3 blockgroups.py $($*) 2014 > $@
+$(PG_DB) :
+	createdb $@
+	psql -d $@ -c "CREATE EXTENSION POSTGIS"
 
 %_2011_blockgroups.geojson :
 	python3 blockgroups.py $($*) 2011 > $@
@@ -38,32 +44,58 @@ nashville = 47 52006 # Nashville-Davidson metropolitan government (balance)
 %_blocks.geojson :
 	python3 blocks.py $($*) > $@
 
-%_tracts.shp : %_tracts.geojson
-	ogr2ogr $@ $< -where "(\"B03002_012E\" != '0' OR \
-                               \"B03002_003E\" != '0' OR \
-                               \"B03002_004E\" != '0') AND \
-                               \"B25105_001E\" IS NOT NULL"
+.PHONY : %_blocks %_2011_blockgroups
+%_blocks : %_blocks.geojson
+	$(CHECK_RELATION) || \
+	ogr2ogr -f "PostgreSQL" PG:"dbname=$(PG_DB)" $< -nln $@ -nlt MULTIPOLYGON
 
-%_blockgroups.shp : %_blockgroups.geojson
-	ogr2ogr $@ $< -where "(\"B03002_012E\" != '0' OR \
-                               \"B03002_003E\" != '0' OR \
-                               \"B03002_004E\" != '0')"
-
-%_blocks.shp : %_blocks.geojson
-	ogr2ogr $@ $< -where "(\"P0050003\" != '0' OR \
-                               \"P0050004\" != '0' OR \
-                               \"P0040003\" != '0')"
+%_2011_blockgroups : %_2011_blockgroups.geojson
+	$(CHECK_RELATION) || \
+	ogr2ogr -f "PostgreSQL" PG:"dbname=$(PG_DB)" $< -nln $@ -nlt MULTIPOLYGON
 
 
-.PHONY : 2014_blockgroups
-2014_blockgroups : nyc_2014_blockgroups.shp la_2014_blockgroups.shp chicago_2014_blockgroups.shp houston_2014_blockgroups.shp philadelphia_2014_blockgroups.shp phoenix_2014_blockgroups.shp san_antonio_2014_blockgroups.shp san_diego_2014_blockgroups.shp dallas_2014_blockgroups.shp san_jose_2014_blockgroups.shp austin_2014_blockgroups.shp jacksonville_2014_blockgroups.shp san_francisco_2014_blockgroups.shp indianapolis_2014_blockgroups.shp columbus_2014_blockgroups.shp fort_worth_2014_blockgroups.shp charlotte_2014_blockgroups.shp seattle_2014_blockgroups.shp denver_2014_blockgroups.shp el_paso_2014_blockgroups.shp detroit_2014_blockgroups.shp dc_2014_blockgroups.shp boston_2014_blockgroups.shp memphis_2014_blockgroups.shp nashville_2014_blockgroups.shp
+%_blocks.shp : %_blocks %_2011_blockgroups
+	ogr2ogr -f "ESRI Shapefile" $@ PG:"dbname=$(PG_DB)" -sql \
+	    "SELECT p0050003::INT, p0050004::INT, p0040003::INT, $<.wkb_geometry, \
+                    SUM(blockgroups.b25064_001 * \
+                        ST_Area(ST_Intersection(blockgroups.wkb_geometry, \
+                                                $<.wkb_geometry))) / \
+                    ST_Area($<.wkb_geometry) AS b25064_001 \
+             FROM (SELECT ogc_fid, original.wkb_geometry, \
+                   COALESCE(original.b25064_001::FLOAT, \
+                            touching.b25064_001, \
+                            knn.b25064_001) AS b25064_001 \
+                   FROM $(word 2,$^) AS original \
+                   LEFT JOIN \
+                        (SELECT a.ogc_fid, AVG(b.b25064_001::FLOAT) AS b25064_001 \
+                         FROM $(word 2,$^) AS a \
+                         LEFT JOIN $(word 2,$^) AS b \
+                             ON ST_Touches(a.wkb_geometry, b.wkb_geometry) \
+                                AND a.ogc_fid != b.ogc_fid \
+                         WHERE b.b25064_001 IS NOT NULL \
+                         GROUP BY a.ogc_fid) AS touching \
+                       USING (ogc_fid) \
+                   INNER JOIN \
+                        (WITH subq AS (SELECT a.ogc_fid, \
+                                              UNNEST(ARRAY(SELECT b.b25064_001::FLOAT \
+                                                           FROM $(word 2,$^) AS b \
+                                                           WHERE a.ogc_fid != b.ogc_fid \
+                                                               AND b.b25064_001 IS NOT NULL \
+                                                           ORDER BY a.wkb_geometry <#> b.wkb_geometry \
+                                                           LIMIT 5)) AS neighbors \
+                                       FROM $(word 2,$^) AS a) \
+                         SELECT ogc_fid, AVG(neighbors) AS b25064_001 \
+                         FROM subq \
+                         GROUP BY ogc_fid) AS knn \
+                       USING (ogc_fid)) AS blockgroups \
+             INNER JOIN $< \
+                 ON ST_Intersects(blockgroups.wkb_geometry, $<.wkb_geometry) \
+             WHERE p0050003 != '0' OR p0050004 != '0' OR p0040003 != '0' \
+             GROUP BY $<.ogc_fid"
 
-.PHONY 2011_blockgroups
-2011_blockgroups : nyc_2011_blockgroups.shp la_2011_blockgroups.shp chicago_2011_blockgroups.shp houston_2011_blockgroups.shp philadelphia_2011_blockgroups.shp phoenix_2011_blockgroups.shp san_antonio_2011_blockgroups.shp san_diego_2011_blockgroups.shp dallas_2011_blockgroups.shp san_jose_2011_blockgroups.shp austin_2011_blockgroups.shp jacksonville_2011_blockgroups.shp san_francisco_2011_blockgroups.shp indianapolis_2011_blockgroups.shp columbus_2011_blockgroups.shp fort_worth_2011_blockgroups.shp charlotte_2011_blockgroups.shp seattle_2011_blockgroups.shp denver_2011_blockgroups.shp el_paso_2011_blockgroups.shp detroit_2011_blockgroups.shp dc_2011_blockgroups.shp boston_2011_blockgroups.shp memphis_2011_blockgroups.shp nashville_2011_blockgroups.shp
 
 
 .PHONY : blocks
 blocks : nyc_blocks.shp la_blocks.shp chicago_blocks.shp houston_blocks.shp philadelphia_blocks.shp phoenix_blocks.shp san_antonio_blocks.shp san_diego_blocks.shp dallas_blocks.shp san_jose_blocks.shp austin_blocks.shp jacksonville_blocks.shp san_francisco_blocks.shp indianapolis_blocks.shp columbus_blocks.shp fort_worth_blocks.shp charlotte_blocks.shp seattle_blocks.shp denver_blocks.shp el_paso_blocks.shp detroit_blocks.shp dc_blocks.shp boston_blocks.shp memphis_blocks.shp nashville_blocks.shp
 
-
-all : 2014_blockgroups 2011_blockgroups blocks
+all : blocks

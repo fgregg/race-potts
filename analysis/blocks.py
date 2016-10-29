@@ -9,18 +9,20 @@ def example(base_name, data_path) :
     dbf = pysal.open(data_path + base_name + '.dbf', 'r')
 
     labels = numpy.vstack(list(raceLabelGen(dbf)))
- 
-    features = numpy.zeros((labels.shape[0], 1), dtype='float')
+
+    features = numpy.vstack(list(node_features(dbf)))
+    features -= features.mean(axis=0)
+
     edgelist = edgeList(shapes)
 
     return (features, edgelist), labels
 
 def raceLabelGen(dbf) :
-    white_index = dbf.header.index('P0050003')
-    black_index = dbf.header.index('P0050004')
-    hispanic_index = dbf.header.index('P0040003')
+    white_index = dbf.header.index('p0050003')
+    black_index = dbf.header.index('p0050004')
+    hispanic_index = dbf.header.index('p0040003')
     for row in dbf :
-        races = (int(row[black_index]), int(row[hispanic_index]), int(row[white_index]))
+        races = (row[black_index], row[hispanic_index], row[white_index])
         races = numpy.array(races)
         
         yield races
@@ -53,6 +55,14 @@ def trainingData(base_names, data_path) :
     return X, Y
 
 
+def node_features(dbf):
+    median_monthly_gross_rent = dbf.header.index('b25064_001')
+    for row in dbf:
+        rent = row[median_monthly_gross_rent]
+        if rent == 0:
+            import pdb
+            pdb.set_trace()
+        yield numpy.array([numpy.log(rent)], ndmin=2)
 
 
 if __name__ == '__main__' :
@@ -72,13 +82,23 @@ if __name__ == '__main__' :
         place = file_name.rsplit('_', 1)[0]
         
         features, edges = x
-        A = to_adjacency(edges)
+        A = to_adjacency(edges, features.shape[0])
+        average_N_neighbors = A.sum(axis=1).mean()
+        n_sites = features.shape[0]
 
-        potts = CenteredPotts(C=float('inf'))
+        for use_features in (True, False):
 
-        potts.fit((features, A), y)
+            if use_features:
+                model_features = features
+            else:
+                model_features = numpy.zeros_like(features)
 
-        raveled_params = numpy.hstack((potts.intercept_.reshape(-1, 1),
+            potts = CenteredPotts(C=float('inf'), average_spatial=False)
+
+            potts.fit((model_features, A), y)
+
+            raveled_params = numpy.hstack((potts.intercept_.reshape(-1, 1),
                                        potts.coef_)).ravel()
-        writer.writerow([place] + list(raveled_params))
+            writer.writerow([place, n_sites] + list(raveled_params))
+
 

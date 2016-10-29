@@ -1,11 +1,7 @@
-all : params_blocks.csv params_blockgroups.csv params_tracts.csv
+all : emergence.pdf
 
-params_blocks.csv :
-	python3 blocks.py > $@
+params_%.csv :
+	python3 $*.py > $@
 
-params_blockgroups.csv :
-	python3 blockgroups.py > $@
-
-params_tracts.csv :
-	python3 tracts.py > $@
-
+emergence.pdf : emergence.Rnw params_blocks.csv
+	echo 'library(knitr); knit2pdf("$<")' | R --no-save

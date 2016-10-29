@@ -19,7 +19,8 @@ fields = dict(hispanic_pop = 'P0040003',
 
 place_geojson = c.sf1.state_place_block(tuple(fields.values()),
                                         state_fips, place_name,
-                                        return_geometry=True)
+                                        return_geometry=True,
+                                        year=2010)
 
 json.dump(place_geojson, sys.stdout)
 

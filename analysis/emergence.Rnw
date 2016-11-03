@@ -59,74 +59,40 @@ knit_hooks$set(inline = function(x) {
 
 <<blocks-intercept, results='asis', cache=FALSE>>=
 tract_params <- read.csv('params_blocks.csv', header=FALSE)
-names(tract_params) <- c('City', 'N', 'Average Neighbors',
-                         'Int., Black', 'Median Housing Cost, Black', 
+names(tract_params) <- c('City', 'N',
+                         'Int., Black', 'Median Monthly Rent, Black', 
                          'B-H', 'B-W',
-                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
+                         'Int., Hispanic', 'Media Monthly Rent, Hispanic', 
                          'H-B', 'H-W')
 
-no_x <- tract_params[, c('City',
-                         'Int., Black', 
-                         'B-H', 'B-W',
-                         'Int., Hispanic', 
-                         'H-B', 'H-W')]
+no_x <- tract_params[tract_params$"Median Monthly Rent, Black" == 0, 
+                     c('City',
+                       'Int., Black', 
+                       'B-H', 'B-W',
+                       'Int., Hispanic', 
+                       'H-B', 'H-W')]
 xtable(no_x[order(no_x$"B-W"),],
        caption="2010 Blocks, No Housing Costs")
 @
 
-<<blockgroups-intercept, results='asis', cache=FALSE>>=
-tract_params <- read.csv('params_blockgroups_2010.csv', header=FALSE)
-names(tract_params) <- c('City', 'N', 'Average Neighbors',
-                         'Int., Black', 'Median Housing Cost, Black', 
+<<blocks-rent, results='asis', cache=FALSE>>=
+tract_params <- read.csv('params_blocks.csv', header=FALSE)
+names(tract_params) <- c('City', 'N', 
+                         'Int., Black', 'Median Monthly Rent, Black', 
                          'B-H', 'B-W',
-                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
+                         'Int., Hispanic', 'Median Monthly Rent, Hispanic', 
                          'H-B', 'H-W')
 
-no_x <- tract_params[, c('City',
+with_x <- tract_params[tract_params$"Median Monthly Rent, Black" != 0, 
+                       c('City',
                          'Int., Black', 
                          'B-H', 'B-W',
                          'Int., Hispanic', 
                          'H-B', 'H-W')]
-xtable(no_x[order(no_x$"B-W"),],
-       caption="2010 Block Groups, No Housing Costs")
-@
-
-
-<<tracts-intercept, results='asis'>>=
-tract_params <- read.csv('params_tracts.csv', header=FALSE)
-names(tract_params) <- c('City',
-                         'Int., Black', 'Median Housing Cost, Black', 
-                         'B-H', 'B-W',
-                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
-                         'H-B', 'H-W')
-
-no_x <- tract_params[tract_params['Median Housing Cost, Black'] == 0, 
-                     c('City',
-                       'Int., Black', 
-                       'B-H', 'B-W',
-                       'Int., Hispanic', 
-                       'H-B', 'H-W')]
-xtable(no_x[order(no_x$"B-W"),],
-       caption="Tracts, No Housing Costs")
-@
-
-<<tracts-x, results='asis'>>=
-tract_params <- read.csv('params_tracts.csv', header=FALSE)
-names(tract_params) <- c('City',
-                         'Int., Black', 'Median Housing Cost, Black', 
-                         'B-H', 'B-W',
-                         'Int., Hispanic', 'Median Housing Cost, Hispanic', 
-                         'H-B', 'H-W')
-
-with_x <- tract_params[tract_params['Median Housing Cost, Black'] != 0, 
-                     c('City',
-                       'Int., Black', 
-                       'B-H', 'B-W',
-                       'Int., Hispanic', 
-                       'H-B', 'H-W')]
 xtable(with_x[order(with_x$"B-W"),],
-       caption = 'Tracts, Controlling for Median Housing Costs')
+       caption="2010 Blocks, Controlling for Median Monthly Rent")
 @ 
+
 
 Sociologists are interested in a number of social phenomena that have
 discrete outcomes and where the outcomes of of adjacent

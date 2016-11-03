@@ -57,41 +57,44 @@ $(PG_DB) :
 %_blocks.shp : %_blocks %_2011_blockgroups
 	ogr2ogr -f "ESRI Shapefile" $@ PG:"dbname=$(PG_DB)" -sql \
 	    "SELECT p0050003::INT, p0050004::INT, p0040003::INT, $<.wkb_geometry, \
-                    SUM(blockgroups.b25064_001 * \
+                    SUM(blockgroups.b25064_001e * \
                         ST_Area(ST_Intersection(blockgroups.wkb_geometry, \
                                                 $<.wkb_geometry))) / \
-                    ST_Area($<.wkb_geometry) AS b25064_001 \
+                    ST_Area($<.wkb_geometry) AS b25064_001e \
              FROM (SELECT ogc_fid, original.wkb_geometry, \
-                   COALESCE(original.b25064_001::FLOAT, \
-                            touching.b25064_001, \
-                            knn.b25064_001) AS b25064_001 \
+                   COALESCE(original.b25064_001e::FLOAT, \
+                            touching.b25064_001e, \
+                            knn.b25064_001e) AS b25064_001e \
                    FROM $(word 2,$^) AS original \
                    LEFT JOIN \
-                        (SELECT a.ogc_fid, AVG(b.b25064_001::FLOAT) AS b25064_001 \
+                        (SELECT a.ogc_fid, AVG(b.b25064_001e::FLOAT) AS b25064_001e \
                          FROM $(word 2,$^) AS a \
                          LEFT JOIN $(word 2,$^) AS b \
                              ON ST_Touches(a.wkb_geometry, b.wkb_geometry) \
                                 AND a.ogc_fid != b.ogc_fid \
-                         WHERE b.b25064_001 IS NOT NULL \
+                         WHERE b.b25064_001e IS NOT NULL \
                          GROUP BY a.ogc_fid) AS touching \
                        USING (ogc_fid) \
                    INNER JOIN \
                         (WITH subq AS (SELECT a.ogc_fid, \
-                                              UNNEST(ARRAY(SELECT b.b25064_001::FLOAT \
+                                              UNNEST(ARRAY(SELECT b.b25064_001e::FLOAT \
                                                            FROM $(word 2,$^) AS b \
                                                            WHERE a.ogc_fid != b.ogc_fid \
-                                                               AND b.b25064_001 IS NOT NULL \
+                                                               AND b.b25064_001e IS NOT NULL \
                                                            ORDER BY a.wkb_geometry <#> b.wkb_geometry \
                                                            LIMIT 5)) AS neighbors \
                                        FROM $(word 2,$^) AS a) \
-                         SELECT ogc_fid, AVG(neighbors) AS b25064_001 \
+                         SELECT ogc_fid, AVG(neighbors) AS b25064_001e \
                          FROM subq \
                          GROUP BY ogc_fid) AS knn \
                        USING (ogc_fid)) AS blockgroups \
              INNER JOIN $< \
                  ON ST_Intersects(blockgroups.wkb_geometry, $<.wkb_geometry) \
              WHERE p0050003 != '0' OR p0050004 != '0' OR p0040003 != '0' \
-             GROUP BY $<.ogc_fid"
+             GROUP BY $<.ogc_fid \
+             HAVING SUM(ST_Area(ST_Intersection(blockgroups.wkb_geometry, \
+                    		                            $<.wkb_geometry))) / \
+                        ST_Area($<.wkb_geometry) > 0.9"
 
 
 

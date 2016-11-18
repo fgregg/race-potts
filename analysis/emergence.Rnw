@@ -102,12 +102,79 @@ school friend group; the relation between a social network and taste
 preferences.
 
 There are many, different difficulties in understanding these
-phenomena, but they all share a common hurdle. We have not had an
+phenomena, but they all share a common hurdle. For the small and
+moderate sized network data typical of social science, we can place
+very little trust in our estimates.  Our techniques for estimating
+these types of models are either computationally intractable or
+statistically inefficient. If our data is small enough to use a
+statistically efficient technique, the meager size of the data will
+lead to large sampling error. If we have more data, we will have use a
+much less efficient method.
+
+The simplistic escape from this dilemma is more data. Since
+sociologists are increasingly able to access very large network data
+sets, we can benefit from techniques that we previously would have
+ignored.
+
+In this paper, we discuss one such method using as an example the
+classic problem of racial segregation. We will produce new measures
+of city level segregation called the ``Schelling index'', which
+measures how much local, racist housing preferences are necessary to
+produce observed city-level racial segregation. This measures and the
+model we use to derive it opens up new insights and approaches in the
+study of housing segregation.
+
+
+
+
+
+how city-wide racial segregation can emerge from
+individual households with slight racists preferences for neighbors.
+
+
+
+Before introducing the structured support vector machine, we should
+examine why our classic approaches will not work.
+of 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+For very small systems, we
+could use a statistically efficient estimation technique, but we would
+be 
+
+We have not had
+efficient techniques for estimating systems that have both discrete
+outcomes and interdependence between outcomes. 
+
+
+More precisely, we have
+had two problems.
+
+
+
+ 
+
+
+
+. Sociologists have not 
 effective method to estimate large system with both discrete outcomes
-and interdependence between adjacent units. While we now have methods
+and interdependence between adjacent units. While we now commonly
 to estimate spatially auto-correlated systems with continuous or count
-outcomes, autocorrelated discrete outcomes are intractable to our the
-classic methods.
+outcomes, autocorrelated discrete outcomes are intractable to classic
+estimating approaches.
 
 The recent development of a method called the Structured Support
 Vector Machine provides a means address these systems. While this

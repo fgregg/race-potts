@@ -102,28 +102,120 @@ school friend group; the relation between a social network and taste
 preferences.
 
 There are many, different difficulties in understanding these
-phenomena, but they all share a common hurdle. For the small and
-moderate sized network data typical of social science, we can place
-very little trust in our estimates.  Our techniques for estimating
-these types of models are either computationally intractable or
-statistically inefficient. If our data is small enough to use a
-statistically efficient technique, the meager size of the data will
-lead to large sampling error. If we have more data, we will have use a
-much less efficient method.
+phenomena, but they all also share one common hurdle: models of
+coupled, discrete outcomes are difficult to estimate. For small
+datasets, unless the coupling between variables is very weak, the
+sampling error will be tremendous.  For the typical, moderate
+sized network data typical of social science, we can't use the most
+statistically efficient method because it's too computationally
+expensive. The loss of efficiency for a tractable estimation method is
+large and increases with the coupling between observations.
 
-The simplistic escape from this dilemma is more data. Since
-sociologists are increasingly able to access very large network data
-sets, we can benefit from techniques that we previously would have
-ignored.
+As for many statistical problems, if we had more data our problems
+would resolve, and we could use statistically inefficient but
+computationally practical methods. In some areas of social inquiry,
+the digitization of our lives has brought us large, available corpi
+of network data like scientific citations or the Enron corpus. Private
+companies have even larger datasets available, which are sometimes
+made available for research. 
 
-In this paper, we discuss one such method using as an example the
-classic problem of racial segregation. We will produce new measures
-of city level segregation called the ``Schelling index'', which
-measures how much local, racist housing preferences are necessary to
-produce observed city-level racial segregation. This measures and the
-model we use to derive it opens up new insights and approaches in the
-study of housing segregation.
+However, many of the largest, best, and most accessible data sources
+for network data is geospatial observations, particularly Census
+data. Reanalyzing data from this familiar source can provide us with 
+a new insights on social processes and help us develop new data for
+use with other types of network data.
 
+In this paper, we demonstrate how a method for estimating spatial
+dependence of discrete factors can help urban sociologists understand
+the classic problem of racial segregation. We will produce
+new measures of city level segregation called the ``Schelling index'',
+which measures how much local, racist housing preferences are
+necessary to produce observed city-level racial segregation. The
+statistical tools introduced can be used to comprehensively evaluate
+theories of racial segregation that are currently difficult to
+directly contrast with empirical data.
+
+\section{Racial Segregation, An Local Approach}
+In his classic 1971 paper ..., Thomas Schelling demonstrated that,
+within a simplified model of a city, very mild levels of individual
+racist housing preferences could lead to stark patterns of racial
+segregation. 
+
+In his basic model, there were white, black, and vacant
+households. Black and white households are content if the majority of
+their neighbors are of the same race. One by one, a discontented
+households can move to the nearest vacant household that makes them
+content. If we let these simple rules play out over indefinitely, eventually,
+black and white households will be segregated into large racially
+homogenous regions.
+
+Schelling explored how changing the rules of the simulation and found
+that the emergence of large segregation regions was remarkably
+robust. All that seems necessary is that at least one race prefer,
+even mildly, that most of their neighbors be of the same race and
+that the other race not have a positive preference for living next to
+neighbors who were mainly of the first race.
+
+Schelling's paper pioneered what now called agent based modeling and
+exemplifies all of its typical strengths. He is able set up a set of
+rules that are very easy to understand, and then explore
+quantitatively, reproducibly, and comprehensively the consequences of
+those rules. He can change the almost any rule or configuration and
+play the action forward to see the result.
+
+However, Schelling model also has the limitations that are typical of
+agent-based modeling, at least within the sociological
+literature. Schelling showed that the local action of households
+acting on individual preferences could lead to the racial segregation
+that resembled American cities. He did not, and with his tools, could
+not show that this explanation was better than the alternative
+explanations of legally enforced segregation, housing filtering, or
+discrimination by banks, realtors, or developers.
+
+
+
+
+
+
+
+
+households acting on with very mild
+racist preferences in who they lived next to 
+very mild racist preferences in 
+
+While sociologists
+
+Within sociology, the most famous example is the emergence model of
+racial segregation, which explains stark, city wide patterns of racial
+segregation as the result of individual households acting on mild
+preferences for same-race neighbors. In his 1971 paper, Thomas
+Schelling introduced a model with black and white agents, endowed them
+with preferences, set rules for when and how each agent could move,
+and ran the simulation forward.\cite{schelling_dynamic_1971} When he
+set the preferences of the agents to even mildly prefer to be
+surrounded by agents of the same color, the black and white agents
+would eventually segregate into distinct neighborhoods. These large
+scale patterns looked quite similar to patterns of actual, racial
+segregation in contemporary American cities.
+
+Since his pioneering work, researchers have improved substantially on
+his method. In Elizabeth Bruch's exemplary, recent paper on how within
+group income inequality and between inequality can effect racial
+segregation, the preferences of the agents are informed by research
+into individual racial preferences, the agents move over a realistic
+geographic space and not an abstract grid, and she uses the simulation
+to derive specific, suprising associations that should appear in
+aggregate data and which she validates
+empirically.\cite{bruch_how_2014}
+
+Agent-based modeling lets researchers explore how local actions could
+lead to global patterns. Ideally, we would also be able to go in the
+opposite direction. We would derive local effects from global patterns
+and test whether those local effects are consistent with theory and
+other evidence. While the typical model sociologists would use to
+estimate the local effects are not tractable, in this paper we
+introduce an estimation technique that can be used---the structured support
+vector machine.
 
 
 

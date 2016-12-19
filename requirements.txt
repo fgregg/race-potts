@@ -1,5 +1,4 @@
 pysal
 psycopg2
 pystruct
-census
-us
+census_area

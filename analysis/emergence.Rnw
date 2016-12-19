@@ -114,7 +114,7 @@ large and increases with the coupling between observations.
 As for many statistical problems, if we had more data our problems
 would resolve, and we could use statistically inefficient but
 computationally practical methods. In some areas of social inquiry,
-the digitization of our lives has brought us large, available corpi
+the digitization of our lives has brought us large, available corpii
 of network data like scientific citations or the Enron corpus. Private
 companies have even larger datasets available, which are sometimes
 made available for research. 
@@ -163,14 +163,39 @@ quantitatively, reproducibly, and comprehensively the consequences of
 those rules. He can change the almost any rule or configuration and
 play the action forward to see the result.
 
-However, Schelling model also has the limitations that are typical of
-agent-based modeling, at least within the sociological
-literature. Schelling showed that the local action of households
-acting on individual preferences could lead to the racial segregation
-that resembled American cities. He did not, and with his tools, could
-not show that this explanation was better than the alternative
-explanations of legally enforced segregation, housing filtering, or
-discrimination by banks, realtors, or developers.
+Schelling model also has typifies the usual limitations agent-based
+modeling, at least within the sociological literature. Schelling
+showed that the local action of households acting on individual
+preferences could lead to the residential patterns that resembled the
+racial segregation. He did not, and with his tools, could not measure
+preferences from observed residential patterns. With no measure, he
+could not compare the importance of individual action versus larger
+legal and economic forces to maintaining racial segregation. He showed
+that individual, local action could lead to racial segregation, but
+couldn't show that this mechanism actually mattered in the observed
+segregation of American cities.
+
+As we discuss in the next section, we can now get a measure
+of racial preferences from actual housing patterns. We can get a
+``Schelling measure'' though we will have to give up some of the
+original flexibility of his model.
+
+\section{Racial Segregation, an Interdependent Approach}
+In Schelling model, a household is not discontent until it surrounded
+by a majority of neighbors that are of a different race. This type of
+nonlinearity 
+
+Some of the features of Schelling's model 
+
+
+
+Even with a great deal more data and
+computing power, we will still have to make some stricter assumptions 
+
+This ``Schelling measure'' requires stricter
+assumptions and a lot of data
+
+
 
 
 

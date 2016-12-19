@@ -9,3 +9,11 @@ password in .pgpass
 * `createdb segregation` if you want to name you db something else, you'll need to edit data/config.mk
 * psql -d segregation -c "CREATE EXTENSION postgis"
 * run make
+
+## requirements
+- posgresql
+- postgis
+- gdal
+
+-numpy
+-requirements.txt

@@ -180,35 +180,137 @@ of racial preferences from actual housing patterns. We can get a
 ``Schelling measure'' though we will have to give up some of the
 original flexibility of his model.
 
-\section{Racial Segregation, an Interdependent Approach}
-In Schelling model, a household is not discontent until it surrounded
-by a majority of neighbors that are of a different race. This type of
-nonlinearity 
+\section{Racial Segregation, an Autocorrelated Approach}
+Schelling's model has a sharp discontinuity that is inconvenient to
+work with and not critical to his results. If a household is
+surrounded by a majority of neighbors of the same race it will never
+move, but if it is in the minority it will always attempt to move. 
 
-Some of the features of Schelling's model 
+Instead, allow the proportion of neighbors of different races to
+smoothly affect the probability of a house being occupied by a white
+or black household. We can then capture the Schelling dynamics with a
+very familiar probabilistic model.
+
+First we introduce a little terminology. Let $y_i$ be the race of the
+household in the $i$th house. If the $i$th house is occupied by a
+white household, $y_i$ takes a value of $1$, and if it is occupied by
+a black household, $y_i$ takes a value of $0$. Let $\rho$ be a
+measure of racial preference; let $\operatorname{N}(i)$ be the set of
+indices $j$ which neighbor the $i$ house; and let $\mathcal{N}_i$ be the
+number of neighbors of the $i$th house. 
+
+We can write the log odds of house being occupied by a white household as
+
+\begin{align}
+  \log\frac{\Pr(y_i = 1 \mid \{y_j : j \neq i\})}{\Pr(y_i = 0 \mid \{y_j : j \neq i\})} = \rho\frac{1}{\mathcal{N}_i}\sum_{j \in \operatorname{N}(i)}y_j
+\end{align}
+
+This is almost the workhorse model for logistic regression, except
+that the outcome $y_i$ is interdependent on all the other outcomes of
+neighboring houses.  That interdependence is also called
+autocorrelation, and this statistical model is known as logistic
+regression with spatial correlation or the autologistic model.
+
+Estimating this model poses many challenges, but before we turn to
+those, we should acknowledge what we give up when we move from the
+agent-based model to this formal, probabilistic model. 
+
+First, in agent based model, we can freely choose how neighbors effect
+the focal outcome, but the probabilistic model assumes that each
+neighbors contributes to the focal outcome independently and
+additively, but see (citations for higher order cliques).
+
+Second, we cannot have separate parameters for the racial preferences
+of black households and white households. From survey research, we
+know that black and white households do differ in their preferences
+for the races of their neighbors. Our model cannot recover those
+preferences. Instead, $\rho$ summarizes the interaction of those
+preferences into a single correlation-like measure.
+
+\section{Estimation}
+Our classic methods, whether frequentist or Bayesian, for estimating
+parameters depend upon being able to calculate the likelihood of the
+data. However, while the spatial model looks similar to the logistic
+regression models, the full data likelihood turns out to be
+intractable. The likelihood depends not just on the observed patterns
+of racial segregation, but every single possible pattern of racial
+segregation.
+
+Let $\mathbf{z}$ be a possible pattern of racial segregation
+and $\zeta$ be the set of all possible patterns.
+
+\begin{align}
+  Z = \sum_{\mathbf{z} \in \zeta} \exp\Big({\sum_i^N(\beta_0z_i + ... + \beta_dx_dz_i) + \rho\sum_i\sum_{j \in \operatorname{N}(i)}z_iz_j}\Big)
+\end{align}
+and the full data log likelihood of an observed pattern of racial
+segregation, $\mathbf{y}$, is 
+
+\begin{align}
+  \log\Pr(\mathbf{\beta}, \rho \mid \mathbf{y}) = (\sum_i^M(\beta_0y_i  +
+  ... + \beta_dx_dy_i) + \rho\sum_i\sum_{j \in \operatorname{N}(i)}
+  y_i,y_j)- Z
+\end{align}
+
+For two race and $N$ sites there are $2^N$ possible patterns in
+$\zeta$. So, with just 30 sites, the calculating the require takes
+over a billion arithmetic operations. For all but the smallest data
+sets, calculating the likelihood is computationally intractable.
+
+If we cannot calculate the likelihood, we cannot maximize the
+likelihood to estimate parameters. There have been two main responses
+to this computational barrier, pseudolikelihood, MCMC approxmiation,
+and simulation.
+
+\subsection*{Psuedolikelihood}
+Originally proposed by Besag, the pseudolikelihood is
+
+\begin{align}
+  p(\boldsymbol{\theta} \mid \mathbf{y}) = \prod_i^N\Pr(y_i \mid \{y_j : j \neq i\})
+\end{align}
+
+This is effectively the 
+so for our model, the log pseudolikelihood is
+
+\begin{align}
+  \log p(\boldsymbol{\beta}, \rho \mid \mathbf{y}) = &\sum_i^M(\beta_0y_i +
+  ... + \beta_dx_{di}y_i) + \rho\sum_i\sum_{j \in \operatorname{N}(i)}
+  y_i,y_j\\&- \sum_i^M\log(1 + e^{\beta_0 +
+  ... + \beta_dx_{id} + \rho\sum_{j \in \operatorname{N}(i)}y_j})
+\end{align}
+
+Like the maximum likelihood estimate, the maximum pseudolikelihood
+estimate is a consistent estimator. That is, as the, the number of
+sites $M$ goes to infinity the maximum pseudolikelihood parameter
+estimates $\hat{\boldsymbol{\theta}}$ converges to the true parameter
+$\boldsymbol{\theta}$. This convergence is slower than the maximum
+likelihood estimator, and the loss of efficiency increases with the
+strength of the interdependence between sites\cite{Cresside 488}. The
+bias of the estimator has not been fully characterized \cite{erg}.
+
+Social scientists have used psuedolikelihood methods to study a
+problem that looks like the near opposite of the problem of racial
+segregation. Given an observed social network of nodes and edges, can
+we estimate the parameters that determine the likelihood that two
+nodes will share an edge. In the problem of racial segregation, we
+want to know how the races of the neighbors of site $i$ will affect
+the race of the household at site $i$. In this social network problem,
+the task is to estimate how the attributes of nodes $j$ and $k$ will
+make it more likely that they will be ``neighbors'', i.e. share a tie.
+
+Ultimately, the problem can take the same mathematical form if the
+likelihood that node $j$ and $k$ are connected depends upon the number
+of other ties that both $j$ and $k$ have. Let $y_{ij}$ take a value of
+$1$ if there is a tie between node $i$ and node $j$ and $0$ otherwise,
+then we could express this interdependency as follows
+
+\begin{align}
+  \log\frac{\Pr(y_{ij} = 1 \mid \{y_{kl} : k \neq i\ \text{and } l \neq
+    j\})}{\Pr(y_{ij} = 0 \mid \{y_{kl} : k \neq i\ \text{and } l \neq j\})} =
+  \beta_0 + \beta_1x_{0ij} + ... + \beta_dx_{dij} + \rho(\sum_{l \neq
+    j}y_{il} + \sum_{k \neq i}y_{kj})
+\end{align}
 
 
-
-Even with a great deal more data and
-computing power, we will still have to make some stricter assumptions 
-
-This ``Schelling measure'' requires stricter
-assumptions and a lot of data
-
-
-
-
-
-
-
-
-
-
-households acting on with very mild
-racist preferences in who they lived next to 
-very mild racist preferences in 
-
-While sociologists
 
 Within sociology, the most famous example is the emergence model of
 racial segregation, which explains stark, city wide patterns of racial
@@ -544,259 +646,262 @@ techniques impossible for models with even a moderate number of
 locations. The structured support vector machine lets us solve a very
 similar problem, while avoiding that intractable sum.
 
-\input{theory_and_math.tex}
-
-\section*{Estimating Racial Preferences}
-We now estimate the racial frustration costs from the observed
-residential patterns of the 49 most populous American counties (Table~\ref{tab:counties}) .
-
-<<countyTable, results='asis'>>=
-library(RPostgreSQL)
-con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(), dbname="segregation")
-
-counties <- DBI::dbGetQuery(con, 
-    "SELECT name[3] || ', ' || name[4] AS place, 
-            SUM(total)/1000000::FLOAT AS population,
-            SUM(white)/1000000::FLOAT AS white,
-            SUM(black)/1000000::FLOAT  AS black,
-            SUM(hispanic)/1000000::FLOAT AS hispanic
-     FROM (SELECT REGEXP_SPLIT_TO_ARRAY(\"NAME\", ', ') AS name, 
-                  \"B03002_001E\" AS total,
-	          \"B03002_003E\" as white, 
-	          \"B03002_004E\" as black, 
-                  \"B03002_012E\" as hispanic
-           FROM race) AS t 
-     GROUP BY name[3] || ', ' || name[4] ORDER BY SUM(total) DESC")
-
-names(counties) <- c("County", "Total Population", "White", "Black", "Hispanic")
-
-
-n_blockgroups <- DBI::dbGetQuery(con, "SELECT COUNT(*) FROM race")
-    
-print(xtable(counties,
-             caption="Populations of 49 Largest Counties (In Millions)",
-             label="tab:counties"),
-      digits=2,
-      include.rownames=FALSE)
-@ 
-
-From the 2010-2015 ACS 5-Year Estimates, we pull the population of
-Hispanics, Non-Hispanic Whites, and Non-Hispanic African Americans for
-every block group in all the counties.\cite{bureau_american_????} For every
-block group, we label the block group as Hispanic, White, or Black
-based on which group is most common in the block group.  Using the
-associated 2014 TIGER/Line Shapefiles, we calculate the adjacency
-matrix for the
-blockgroups\cite{tiger/line_????,rey_pysal:_2007}. There are \Sexpr{n_blockgroups} block groups in the data.
-
-We'll use these data to estimate the parameters of the following score
-function. 
-
-\begin{align}
-\operatorname{E}(\mathbf{y}) = \sum_{<i
-  j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j) + \sum_i^N\epsilon_i(y_i)
-\end{align}
-
-Where 
-
-\begin{align}
-  \epsilon_{i,j} = &w_0\operatorname{WW}(x_{i}, x_{j}) +
-  w_1\operatorname{WB}(x_{i}, x_{j}) + 
-  w_2\operatorname{WH}(x_{i}, x_{j}) \\
-  &+ w_3\operatorname{BB}(x_i, x_j) +
-  w_4\operatorname{BH}(x_i, x_j) +
-  w_5\operatorname{HH}(x_i, x_j)
-\end{align} 
-
-and $\operatorname{WW}$ indicates that block $i$ and $j$ are both
-labeled as ``White''; $\operatorname{WB}$ indicates a ``White'' block
-and ``Black'' block; $\operatorname{WH}$ indicates indicates a
-``White'' block and ``Hispanic'' block; and so on.
-
-In addition, 
-
-\begin{align}
-  \epsilon_{i} = w_6 + & w_7\operatorname{W_1}(y_{i}) +  
-          w_{10}\operatorname{H_1}(y_{i}) + w_{11} +
-          w_{12}\operatorname{B_1}(y_i) \\
-          + &w_{12}\operatorname{W_2}(y_{i}) +
-          w_{13}\operatorname{H_2}(y_{i}) +
-          w_{14}\operatorname{B_2}(y_i)\\
-          + &... \\
-          + &w_{150}\operatorname{W_{49}}(y_{i}) +
-          w_{151}\operatorname{H_{49}}(y_i) + w_{152}\operatorname{B_{49}}(y_i)
-\end{align}
-
-where $\operatorname{W_k}$, $\operatorname{B_k}$, $\operatorname{H_k}$
-are indicator functions for whether a block is labeled as white,
-black, or Hispanic. Since every county has a different racial mix, we
-need a set indicator variables for each county. These weights affect
-how we would label a block if we didn't know anything about it's neighbors.
-
-We estimate all the parameters using the PyStruct
-library.\cite{muller_pystruct_2014} In order to evaluate the
-robustness of the parameters, we bootstrap a sampling distribution of
-the parameters by sampling with replacement from the 49 counties,
-estimating the parameters on the sample, recording the results, and
-repeating 1000 times. Using the percentile bootstrap, we estimate the
-confidence intervals for the parameters.
-
-In Table~\ref{tab:parameters}, we have the parameters for racial
-preferences.\footnote{If our formalism, which is typical of the
-  literature, the objective is to find the parameters that give the
-  observed data the smallest score. PyStruct attempts to find the
-  parameters the largest score. This makes no real difference except
-  it inverts the signs of the parameters. In order to maintain
-  consistency, I invert the signs of PyStruct's parameters in this
-  presentation} The values may seem very small, but this is due to the
-constraint that $\sqrt{\sum_i^M w_i^2 = 1}$ for the 153
-parameters. The racial preference parameters are between one to three
-orders of magnitude greater than the city specific bias terms.
-
-If a racial or ethnic preference parameter is negative, then blocks of
-that type should tend to be neighbors, all else equal. If a preference
-parameter is positive, then blocks of that type should tend to not be
-neighbors. The signs of the parameter align with expectations. Each
-racial and ethnic groups tend to live among their own group. White and
-black blocks, and Hispanic and black groups tend to not to
-neighbor. Interestingly, the parameter for white and Hispanic groups
-is negative, suggesting that white and Hispanic groups should tend to
-neighbor, all else being equal. Only the negative parameter for
-``White-White'' and the postive parameter for ``Black-Hispanic'' have
-95\% confidence intervals that do not cover 0.
-
-\section*{Conclusion}
-This relatively simple analysis demonstrate how we can estimate
-parameters that agent-based models have to posit. Instead of moving
-from micromotive to macrostructure, the support vector machine lets us
-go from macrostructure to micromotives.
-
-This machinery allows us to subject an important class of emergent
-sociological problems to empirical tests. The nature and sources of
-residential segregation are just one instance of a larger class of
-problems where we are interested how network connections effect
-discrete outcomes. Other examples can political party affiliations,
-music genre preferences, or risk taking among groups of
-acquaintances. Of course, when we move from a spatial network to a
-social network we must take care to understand how an outcome could
-structure the network in addition to how the network could influence
-the behavior.
-
-Within the field of urban sociology, the simple models that I have
-used to introduced the method can be extended in a number of
-ways. They can be used to comprehensively compare the potential
-sources of racial segregation, by adding richer variables to the
-particular block groups like the average rent and commute times. These
-models can also be used to compare the racial preferences between
-city, and provide a measure of racial segregation that is scale
-free. These measures could be both input our outcome measures for
-understanding the causes and effects of racial segregation. 
-
-
-<<bootstrap>>=
-library(RcppCNPy)
-
-load <- function(x) {
-    filename = paste0(x, '.npy')
-    npyLoad(filename) * -1 #PyStruct's parameters have opposite signs of those typical in the literature
-}
-
-ww <- load('white-white')
-bw <- load('black-white')
-hw <- load("hispanic-white")
-bb <- load("black-black")
-hb <- load("hispanic-black")
-hh <- load("hispanic-hispanic")
-
-edges <- load("edge_param")
-@ 
-
-
-<<parameters, results='asis'>>=
-confidence_end_points <- c(0.025, 0.975)
-
-edge_parameters <- rbind(
-    "White-White"=c(edges[1,1], quantile(ww, confidence_end_points)),
-    "White-Black"=c(edges[2,1], quantile(bw, confidence_end_points)),
-    "White-Hispanic"=c(edges[3,1], quantile(hw, confidence_end_points)),
-    "Black-Black"=c(edges[2,2], quantile(bb, confidence_end_points)),
-    "Black-Hispanic"=c(edges[3,2], quantile(hb, confidence_end_points)),
-    "Hispanic-Hispanic"=c(edges[3,3], quantile(hh,confidence_end_points)))
-
-
-interleave <- function(v1,v2) {
-  ord1 <- 2*(1:length(v1))-1
-  ord2 <- 2*(1:length(v2))
-  c(v1,v2)[order(c(ord1,ord2))]
-}
-
-edge_parameters <- interleave(prettyNum(edge_parameters[,1], digits=2), 
-                              paste0("(", 
-                                     prettyNum(edge_parameters[,2], 
-                                               digits=2), 
-                                     ", ", 
-                                     prettyNum(edge_parameters[,3], 
-                                               digits=2), 
-                                     ")"))
-edge_parameters <- data.frame(names(edge_parameters), edge_parameters)
-colnames(edge_parameters) <- c("", "Racial Compatibility")
-edge_parameters[,2] <- as.character(edge_parameters[,2])
-edge_parameters[1,2] <- paste0(edge_parameters[1,2], "*")
-edge_parameters[9,2] <- paste0(edge_parameters[9,2], "*")
-      
-print(xtable(edge_parameters, align="llr", #caption="Racial Compatibility Parameters\\\\ Numbers in Parenthesis are 95\\% Confidence Intervals (Percentile Bootstrap)\\\\* $P\\leq.05$",
-label="tab:parameters"), include.rownames=FALSE)
-
-@ 
-
-\newpage
-\begingroup \parindent 0pt
-\parskip 2ex
-\def\enotesize{\normalsize}
-\theendnotes
-\endgroup
-
-\newpage
-\bibliographystyle{plainnat}
-\bibliography{race-potts}
-
-
-
 \end{document}
 
-\footnote{We can also use these
-  techniques on scoring functions that have a term for the relation
-  between the properties of a particular block and the region
-  assignment, $\epsilon_i(y_i)$. This is particularly useful when we
-  already know something about what meaningful categories should exist.
+% \input{theory_and_math.tex}
 
-  \begin{align}
-    \operatorname{E}(\mathbf{y}) = \sum_i^N\epsilon_i(y_i) + \sum_{<i j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j)
-  \end{align}
 
-  For example, if we had a strong, ecological theory of urban space,
-  we might want to identify regions like `the red light district,'
-  `the zone of industry`, `the central business district.' We would
-  want to pay a large penalty if we assigned a block that had lot of
-  immigrants to `the central business district` instead of `the
-  immigrant neighborhood.'
-}
+% \section*{Estimating Racial Preferences}
+% We now estimate the racial frustration costs from the observed
+% residential patterns of the 49 most populous American counties (Table~\ref{tab:counties}) .
+
+% <<countyTable, results='asis'>>=
+% library(RPostgreSQL)
+% con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(), dbname="segregation")
+
+% counties <- DBI::dbGetQuery(con, 
+%     "SELECT name[3] || ', ' || name[4] AS place, 
+%             SUM(total)/1000000::FLOAT AS population,
+%             SUM(white)/1000000::FLOAT AS white,
+%             SUM(black)/1000000::FLOAT  AS black,
+%             SUM(hispanic)/1000000::FLOAT AS hispanic
+%      FROM (SELECT REGEXP_SPLIT_TO_ARRAY(\"NAME\", ', ') AS name, 
+%                   \"B03002_001E\" AS total,
+% 	          \"B03002_003E\" as white, 
+% 	          \"B03002_004E\" as black, 
+%                   \"B03002_012E\" as hispanic
+%            FROM race) AS t 
+%      GROUP BY name[3] || ', ' || name[4] ORDER BY SUM(total) DESC")
+
+% names(counties) <- c("County", "Total Population", "White", "Black", "Hispanic")
+
+
+% n_blockgroups <- DBI::dbGetQuery(con, "SELECT COUNT(*) FROM race")
+    
+% print(xtable(counties,
+%              caption="Populations of 49 Largest Counties (In Millions)",
+%              label="tab:counties"),
+%       digits=2,
+%       include.rownames=FALSE)
+% @ 
+
+% From the 2010-2015 ACS 5-Year Estimates, we pull the population of
+% Hispanics, Non-Hispanic Whites, and Non-Hispanic African Americans for
+% every block group in all the counties.\cite{bureau_american_????} For every
+% block group, we label the block group as Hispanic, White, or Black
+% based on which group is most common in the block group.  Using the
+% associated 2014 TIGER/Line Shapefiles, we calculate the adjacency
+% matrix for the
+% blockgroups\cite{tiger/line_????,rey_pysal:_2007}. There are \Sexpr{n_blockgroups} block groups in the data.
+
+% We'll use these data to estimate the parameters of the following score
+% function. 
+
+% \begin{align}
+% \operatorname{E}(\mathbf{y}) = \sum_{<i
+%   j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j) + \sum_i^N\epsilon_i(y_i)
+% \end{align}
+
+% Where 
+
+% \begin{align}
+%   \epsilon_{i,j} = &w_0\operatorname{WW}(x_{i}, x_{j}) +
+%   w_1\operatorname{WB}(x_{i}, x_{j}) + 
+%   w_2\operatorname{WH}(x_{i}, x_{j}) \\
+%   &+ w_3\operatorname{BB}(x_i, x_j) +
+%   w_4\operatorname{BH}(x_i, x_j) +
+%   w_5\operatorname{HH}(x_i, x_j)
+% \end{align} 
+
+% and $\operatorname{WW}$ indicates that block $i$ and $j$ are both
+% labeled as ``White''; $\operatorname{WB}$ indicates a ``White'' block
+% and ``Black'' block; $\operatorname{WH}$ indicates indicates a
+% ``White'' block and ``Hispanic'' block; and so on.
+
+% In addition, 
+
+% \begin{align}
+%   \epsilon_{i} = w_6 + & w_7\operatorname{W_1}(y_{i}) +  
+%           w_{10}\operatorname{H_1}(y_{i}) + w_{11} +
+%           w_{12}\operatorname{B_1}(y_i) \\
+%           + &w_{12}\operatorname{W_2}(y_{i}) +
+%           w_{13}\operatorname{H_2}(y_{i}) +
+%           w_{14}\operatorname{B_2}(y_i)\\
+%           + &... \\
+%           + &w_{150}\operatorname{W_{49}}(y_{i}) +
+%           w_{151}\operatorname{H_{49}}(y_i) + w_{152}\operatorname{B_{49}}(y_i)
+% \end{align}
+
+% where $\operatorname{W_k}$, $\operatorname{B_k}$, $\operatorname{H_k}$
+% are indicator functions for whether a block is labeled as white,
+% black, or Hispanic. Since every county has a different racial mix, we
+% need a set indicator variables for each county. These weights affect
+% how we would label a block if we didn't know anything about it's neighbors.
+
+% We estimate all the parameters using the PyStruct
+% library.\cite{muller_pystruct_2014} In order to evaluate the
+% robustness of the parameters, we bootstrap a sampling distribution of
+% the parameters by sampling with replacement from the 49 counties,
+% estimating the parameters on the sample, recording the results, and
+% repeating 1000 times. Using the percentile bootstrap, we estimate the
+% confidence intervals for the parameters.
+
+% In Table~\ref{tab:parameters}, we have the parameters for racial
+% preferences.\footnote{If our formalism, which is typical of the
+%   literature, the objective is to find the parameters that give the
+%   observed data the smallest score. PyStruct attempts to find the
+%   parameters the largest score. This makes no real difference except
+%   it inverts the signs of the parameters. In order to maintain
+%   consistency, I invert the signs of PyStruct's parameters in this
+%   presentation} The values may seem very small, but this is due to the
+% constraint that $\sqrt{\sum_i^M w_i^2 = 1}$ for the 153
+% parameters. The racial preference parameters are between one to three
+% orders of magnitude greater than the city specific bias terms.
+
+% If a racial or ethnic preference parameter is negative, then blocks of
+% that type should tend to be neighbors, all else equal. If a preference
+% parameter is positive, then blocks of that type should tend to not be
+% neighbors. The signs of the parameter align with expectations. Each
+% racial and ethnic groups tend to live among their own group. White and
+% black blocks, and Hispanic and black groups tend to not to
+% neighbor. Interestingly, the parameter for white and Hispanic groups
+% is negative, suggesting that white and Hispanic groups should tend to
+% neighbor, all else being equal. Only the negative parameter for
+% ``White-White'' and the postive parameter for ``Black-Hispanic'' have
+% 95\% confidence intervals that do not cover 0.
+
+% \section*{Conclusion}
+% This relatively simple analysis demonstrate how we can estimate
+% parameters that agent-based models have to posit. Instead of moving
+% from micromotive to macrostructure, the support vector machine lets us
+% go from macrostructure to micromotives.
+
+% This machinery allows us to subject an important class of emergent
+% sociological problems to empirical tests. The nature and sources of
+% residential segregation are just one instance of a larger class of
+% problems where we are interested how network connections effect
+% discrete outcomes. Other examples can political party affiliations,
+% music genre preferences, or risk taking among groups of
+% acquaintances. Of course, when we move from a spatial network to a
+% social network we must take care to understand how an outcome could
+% structure the network in addition to how the network could influence
+% the behavior.
+
+% Within the field of urban sociology, the simple models that I have
+% used to introduced the method can be extended in a number of
+% ways. They can be used to comprehensively compare the potential
+% sources of racial segregation, by adding richer variables to the
+% particular block groups like the average rent and commute times. These
+% models can also be used to compare the racial preferences between
+% city, and provide a measure of racial segregation that is scale
+% free. These measures could be both input our outcome measures for
+% understanding the causes and effects of racial segregation. 
+
+
+% <<bootstrap>>=
+% library(RcppCNPy)
+
+% load <- function(x) {
+%     filename = paste0(x, '.npy')
+%     npyLoad(filename) * -1 %PyStruct's parameters have opposite signs of those typical in the literature
+% }
+
+% ww <- load('white-white')
+% bw <- load('black-white')
+% hw <- load("hispanic-white")
+% bb <- load("black-black")
+% hb <- load("hispanic-black")
+% hh <- load("hispanic-hispanic")
+
+% edges <- load("edge_param")
+% @ 
+
+
+% <<parameters, results='asis'>>=
+% confidence_end_points <- c(0.025, 0.975)
+
+% edge_parameters <- rbind(
+%     "White-White"=c(edges[1,1], quantile(ww, confidence_end_points)),
+%     "White-Black"=c(edges[2,1], quantile(bw, confidence_end_points)),
+%     "White-Hispanic"=c(edges[3,1], quantile(hw, confidence_end_points)),
+%     "Black-Black"=c(edges[2,2], quantile(bb, confidence_end_points)),
+%     "Black-Hispanic"=c(edges[3,2], quantile(hb, confidence_end_points)),
+%     "Hispanic-Hispanic"=c(edges[3,3], quantile(hh,confidence_end_points)))
+
+
+% interleave <- function(v1,v2) {
+%   ord1 <- 2*(1:length(v1))-1
+%   ord2 <- 2*(1:length(v2))
+%   c(v1,v2)[order(c(ord1,ord2))]
+% }
+
+% edge_parameters <- interleave(prettyNum(edge_parameters[,1], digits=2), 
+%                               paste0("(", 
+%                                      prettyNum(edge_parameters[,2], 
+%                                                digits=2), 
+%                                      ", ", 
+%                                      prettyNum(edge_parameters[,3], 
+%                                                digits=2), 
+%                                      ")"))
+% edge_parameters <- data.frame(names(edge_parameters), edge_parameters)
+% colnames(edge_parameters) <- c("", "Racial Compatibility")
+% edge_parameters[,2] <- as.character(edge_parameters[,2])
+% edge_parameters[1,2] <- paste0(edge_parameters[1,2], "*")
+% edge_parameters[9,2] <- paste0(edge_parameters[9,2], "*")
+      
+% print(xtable(edge_parameters, align="llr", %caption="Racial Compatibility Parameters\\\\ Numbers in Parenthesis are 95\\% Confidence Intervals (Percentile Bootstrap)\\\\* $P\\leq.05$",
+% label="tab:parameters"), include.rownames=FALSE)
+
+% @ 
+
+% \newpage
+% \begingroup \parindent 0pt
+% \parskip 2ex
+% \def\enotesize{\normalsize}
+% \theendnotes
+% \endgroup
+
+% \newpage
+% \bibliographystyle{plainnat}
+% \bibliography{race-potts}
+
+
+
+% \end{document}
+
+% \footnote{We can also use these
+%   techniques on scoring functions that have a term for the relation
+%   between the properties of a particular block and the region
+%   assignment, $\epsilon_i(y_i)$. This is particularly useful when we
+%   already know something about what meaningful categories should exist.
+
+%   \begin{align}
+%     \operatorname{E}(\mathbf{y}) = \sum_i^N\epsilon_i(y_i) + \sum_{<i j>}^{\mathcal{N}}\epsilon_{i,j}(y_i,y_j)
+%   \end{align}
+
+%   For example, if we had a strong, ecological theory of urban space,
+%   we might want to identify regions like `the red light district,'
+%   `the zone of industry`, `the central business district.' We would
+%   want to pay a large penalty if we assigned a block that had lot of
+%   immigrants to `the central business district` instead of `the
+%   immigrant neighborhood.'
+% }
 
  
-<<hist>>= 
-par(mfrow=c(3,3))
-hist(ww)
-hist(bw)
-hist(hw)
-plot.new()
-hist(bb)
-hist(hb)
-plot.new()
-plot.new()
-hist(hh)
-par(mfrow=c(1,1))
+% <<hist>>= 
+% par(mfrow=c(3,3))
+% hist(ww)
+% hist(bw)
+% hist(hw)
+% plot.new()
+% hist(bb)
+% hist(hb)
+% plot.new()
+% plot.new()
+% hist(hh)
+% par(mfrow=c(1,1))
 
-@ 
+% @ 
 
 
 
